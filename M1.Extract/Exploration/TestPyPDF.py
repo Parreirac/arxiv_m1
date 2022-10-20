@@ -50,8 +50,6 @@ for page in [0]:  # range(pdf.numPages):
 
     if True and '/AA' in pdfPage:
         for item in pdfPage['/AA']:
-            # urls.append(item['/A']['/URI'])
-            # print(item,type(item))
             obj = item.get_object()
             print(obj.__repr__())
             if '/A' in obj : #  obj['/A']['/URI']:

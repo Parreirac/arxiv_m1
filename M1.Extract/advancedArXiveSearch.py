@@ -95,7 +95,7 @@ total_results = 200000000  # want 20 total results
 results_per_iteration = 200  # 5 results at a time
 wait_time = 3  # number of seconds to wait beetween calls
 
-con = sqlite3.connect('myArXive.db')  #: crée une connection.
+con = sqlite3.connect('../myArXive.db')  #: crée une connection.
 cur = con.cursor()
 
 cur.execute('''PRAGMA foreign_keys = OFF''')
@@ -119,7 +119,7 @@ cur.execute('''CREATE TABLE IF NOT EXISTS arXive (
 
 #toute requette arXive est limitee a 10000 ^^
 
-for year in range(2022, 2021, -1):
+for year in range(2010, 2000, -1):
     for month in range(1, 12, 1):
         search_query = "https://arxiv.org/search/advanced?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
                        "&terms-0-field=all&classification-physics_archives=all" \

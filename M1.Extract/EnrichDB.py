@@ -52,7 +52,7 @@ def createList(string: str) -> list[str] | None:
 
 logger.info('Start !')
 
-con = sqlite3.connect(dataBase)  #: crée une connection.
+con = sqlite3.connect(dataBase)  #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
 cur = con.cursor()
 
 cur.execute('''PRAGMA table_info(arXive)''')
@@ -61,31 +61,32 @@ records = cur.fetchall()
 ColumnAlreadyAdded = False
 
 for element in records:
-    if element[1] == 'FirstCat':
+    if element[1] == 'mCOMMENTS':
         ColumnAlreadyAdded = True
         break
 
 if not ColumnAlreadyAdded:
-    cur.execute('''ALTER TABLE arXive ADD COLUMN FirstCat TEXT''')
-    cur.execute('''ALTER TABLE arXive ADD COLUMN SUBTITLE TEXT''')
-    cur.execute('''ALTER TABLE arXive ADD COLUMN KEYWORDS TEXT''')
-    cur.execute('''ALTER TABLE arXive ADD COLUMN REFERENCE TEXT''')
-    cur.execute('''ALTER TABLE arXive ADD COLUMN REFERENCE_c TEXT''')
-    cur.execute('''ALTER TABLE arXive ADD COLUMN APPLICATION TEXT''')
+    cur.execute('''ALTER TABLE arXive ADD COLUMN mCOMMENTS TEXT''')
+    cur.execute('''ALTER TABLE arXive ADD COLUMN cFIRST_CAT TEXT''')
+    cur.execute('''ALTER TABLE arXive ADD COLUMN eSUBTITLE TEXT''')
+    cur.execute('''ALTER TABLE arXive ADD COLUMN eKEYWORDS TEXT''')
+    cur.execute('''ALTER TABLE arXive ADD COLUMN eREFERENCES TEXT''')  #REFERENCES est un mot clé j'ajoute un prefixe m manuel, c calculé, e extrait
+    cur.execute('''ALTER TABLE arXive ADD COLUMN ePDF_METADATA TEXT''')
+    # cur.execute('''ALTER TABLE arXive ADD COLUMN APPLICATION TEXT''')
 
     '''
 Pour supprimer faire dans le DB browser:
 ALTER table arXive drop SUBTITLE
 ALTER table arXive drop FirstCat
 ALTER table arXive drop KEYWORDS
-ALTER table arXive drop REFERENCE
-ALTER table arXive drop REFERENCE_c
+ALTER table arXive drop REFERENCES
+ALTER table arXive drop PDF_METADATA
 ALTER table arXive drop APPLICATION
 '''
 
-# cur.execute('''SELECT * from arXive''')
+cur.execute('''SELECT * from arXive''')
 # For debug purpose, filter database
-cur.execute('''SELECT * from arXive where pdate like '___January__2010' ''')
+# cur.execute('''SELECT * from arXive where pdate like '___January__2010' ''')
 
 records = cur.fetchall()
 
@@ -102,12 +103,13 @@ for row in records:
     summary = row[6]
     pdate = row[7]
     extraData = row[8]
-    FirstCat = row[9]
-    SUBTITLE = row[10]
-    KEYWORDS = row[11]
-    REFERENCE = row[12]
-    REFERENCE_c = row[13]
-    APPLICATION = row[14]
+    COMMENTS = row[9]
+    FirstCat = row[10]
+    SUBTITLE = row[11]
+    KEYWORDS = row[12]
+    REFERENCES = row[13]
+    PDF_METADATA = row[14]
+
 
     if (not AllowRecompute) and FirstCat is not None:
         continue
@@ -116,7 +118,7 @@ for row in records:
     var = ""
 
     if "pdf" not in dlLinks:
-        logger.warning("file {} have no pdf link ".format(entry_id))
+        logger.warning("ArXIve gives no pdf for {}".format(entry_id))
         continue
 
     url = dlLinks['pdf']
@@ -125,22 +127,24 @@ for row in records:
 
     fileName = tmpTab[len(tmpTab) - 1] + ".pdf"
 
-    if downloadMissingFile and not exists(pdfRepository + fileName):  # download file
-        logger.info("download file {}".format(fileName))
-        r = requests.get(url)
-        # Retrieve HTTP meta-data
+    if not exists(pdfRepository + fileName):  # download file
+        if downloadMissingFile:
+            logger.info("download file {}".format(fileName))
+            r = requests.get(url)
+            # Retrieve HTTP meta-data
 
-        logger.debug("status_code {}".format(r.status_code))
-        logger.debug("headers {}".format(r.headers['content-type']))
-        logger.debug("encoding {}".format(r.encoding))
+            logger.debug("status_code {}".format(r.status_code))
+            logger.debug("headers {}".format(r.headers['content-type']))
+            logger.debug("encoding {}".format(r.encoding))
 
-        if r.status_code != 200:
-            logger.warning("Error downloading {}, status_code = {}".format(fileName, r.status_code))
-            continue  # TODO PRA a tester
+            if r.status_code != 200:
+                logger.warning("Error downloading {}, status_code = {}".format(fileName, r.status_code))
+                continue  # TODO PRA a tester
 
-        with open(pdfRepository + fileName, 'wb') as f:
-            f.write(r.content)
-
+            with open(pdfRepository + fileName, 'wb') as f:
+                f.write(r.content)
+        else:
+            continue
     try:
 
         # rv_creator, rv_producer, rv_subtitle, rv_keywords, rv_reference_list, rv_reference_ctrl_set
@@ -151,16 +155,15 @@ for row in records:
         logger.error("file {} not extracted ".format(pdfRepository + fileName), exc_info=True)
     else:
         sql = ''' UPDATE arXive
-                      SET FirstCat = ? ,
-                          SUBTITLE = ? ,
-                          KEYWORDS = ? ,
-                          REFERENCE = ? ,    
-                          REFERENCE_c = ? ,
-                          APPLICATION = ?
+                      SET cFIRST_CAT = ? ,
+                          eSUBTITLE = ? ,
+                          eKEYWORDS = ? ,
+                          eREFERENCES = ? ,    
+                          ePDF_METADATA = ?
                       WHERE entry_id = ?'''  # TODO PRA avec un s a reference!
 
         data = (
-            FirstCat, rv_subtitle, rv_keywords, rv_reference_list.__repr__(), rv_fileMetadata.__repr__(), None,
+            FirstCat, rv_subtitle, rv_keywords, rv_reference_list.__repr__(), rv_fileMetadata.__repr__(),
             entry_id)
         cur.execute(sql, data)
         records = cur.fetchall()

@@ -1,5 +1,3 @@
-# from setuptools import logging
-import urllib
 from datetime import datetime, timedelta
 
 import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat existe un setuptools logging
@@ -7,23 +5,17 @@ import sqlite3
 import time
 from urllib.request import urlopen
 
-# /!\ Ne fonctionne que si results_per_iteration = 25
+
 from bs4 import BeautifulSoup
 
 import logging
 
 
-# import logging
-# import logging
+logger = logging.getLogger(__name__)
+# logger.setLevel('WARNING')
 
+base_url = "https://arxiv.org/search/advanced"
 
-# to add dict in set, we need to freeze them
-# def freeze(d):
-#     if isinstance(d, dict):
-#         return frozenset((key, freeze(value)) for key, value in d.items())
-#     elif isinstance(d, list):
-#         return tuple(freeze(value) for value in d)
-#     return d
 
 def freeze(d):  # todo PRA pas propre et peu utile
     return d.__str__()
@@ -93,27 +85,16 @@ def extractDate(stringData: str):
             iend = iend2
         return stringData[ii:iend]
 
-
-logger = logging.getLogger(__name__)
-# logger.setLevel('WARNING')
-
-
-
-# base_url = "http://export.arxiv.org/api/query?"
-base_url = "https://arxiv.org/search/advanced"
-
 # Search parameters
 start = 0  # start at the first result
 total_results = 10000  # le max exploitable actuellement par le moteur de recherche
-results_per_iteration = 200  # 5 results at a time
+results_per_iteration = 200  # # /!\ Ne fonctionne que si results_per_iteration != from arXive search UI
 wait_time = 3  # number of seconds to wait beetween calls
 
 startDirectory: str = "./../"
 pdfRepository = "./Files/"  # directory must exist... TODO ?
 dataBase = 'myArXive.db'
 
-
-# logger.info('INFO !')
 
 con = sqlite3.connect(startDirectory + dataBase)  #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
 cur = con.cursor()
@@ -181,14 +162,8 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                     last_request_dt = datetime.now()
                     response = url.read()
 
-                    # parse the response using feedparser
-                    #  feed = feedparser.parse(response)
-                    # print("MMMMM: ",feedparser.parse(response))
-                    # feed['feed']['summary']
-                    soup = BeautifulSoup(response, "html.parser")
 
-                    # print("@@",feed['feed']['summary'])
-                    # print("########",soup.contents)
+                    soup = BeautifulSoup(response, "html.parser")
 
                     res = soup.find_all('li', {'class': 'arxiv-result'})
 
@@ -198,9 +173,7 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
 
                     for element in res:  # ,{'class' : 'arxiv-result'}):
                         currentList = list()
-                        # print("####",element.__str__())
-                        # res= BeautifulSoup('<pre>%s</pre>' % element.getText())
-                        # print("##",element.__str__())#.text) # .getText())
+
                         currentSoup = BeautifulSoup(element.__str__(), "html.parser")
                         element = currentSoup.find('p')
                         ide, idLink, Links = extractIdAndLinks(element)

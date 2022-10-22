@@ -12,7 +12,7 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-# logger.setLevel('WARNING')
+
 
 base_url = "https://arxiv.org/search/advanced"
 
@@ -120,11 +120,10 @@ cur.execute('''CREATE TABLE IF NOT EXISTS arXive (
   pdate  TEXT,
   extraData  TEXT)''')
 
-# toute requette arXive est limitee a 10000 ^^
 
 for year in range(2022, 1991, -1):  # 1991 permière année de publication arXive
 
-    datefrom = [ str(year)+"-01-1",str(year)+"-07-01"]  # la date de fin n'est pas precise, mais la date de début si ! bug 28 fev ?
+    datefrom = [ str(year)+"-01-1",str(year)+"-07-01"]  # la date de fin n'est pas prise, mais la date de début si ! bug 28 fev ?
     dateto = [ str(year)+"-07-01",str(year+1)+"-1-1"   ]
     for index in range(len(dateto)):
         search_query = "?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
@@ -140,7 +139,6 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
         required = timedelta(seconds=wait_time)
         for i in range(start, total_results, results_per_iteration):
             logger.info("Results {} - {}".format(i + 1, i + results_per_iteration))
-            # logger.info("# pouet " + base_url + search_query + "&start=" + str(i))
 
             since_last_request = datetime.now() - last_request_dt
             if since_last_request < required:

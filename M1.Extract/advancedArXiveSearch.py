@@ -262,9 +262,10 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
 
                     if len(res) < results_per_iteration:
                         break # no needs to continue "&start="  loop
-
-            except urllib.error.URLError as e:
-                logger.error(e.reason)
+            finally:
+                pass
+            # except urllib.error.URLError as e:
+            #     logger.error(e.reason)
             # now = datetime.now()
             #
             # required = timedelta(seconds=wait_time)

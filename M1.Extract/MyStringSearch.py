@@ -1,36 +1,38 @@
 """
-In pdf file we have different objets.
-Then the text extraction can have extra \n and spaces.
+Then the text extraction can have extra \n and spaces, this find handle them
 """
 import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat
 import logging
 
-def Myfind(text: str, sub: str, caseSensitive=True, start=None, end=None):  # TODO gerer la case
+def Myfind(text: str, sub: str, caseSensitive=True, start:int=None, end:int=None, Reverse = False):  # TODO Reverse
     i = 0  # start index in text string
     ic = 0  # current index in text string
     j = 0  # current index in substring
 
-    i1 = len(text)
-    text = text.replace('ﬁ', 'fi')  # todo pra faire plus propre
-    text = text.replace('ﬂ', 'fl')  # todo pra faire plus propre
-
-    i2 = len(text)
-    if i1 != i2:
-        pass
 
 
     imax = len(text)
     jmax = len(sub)
 
-    if imax < jmax: # No chance, return False !
-        return False,-1,-1
+    if not end is None:
+        imax = min(imax, end)
+    if not start is None:
+        i = max(i, start)
 
-    # print ("####",imax,jmax,"\n###",text,"\n###",sub)
+    if Reverse:
+        rv_b,rv1,rv2 = Myfind(text[::-1], sub[::-1], caseSensitive,start=start, end=end, Reverse = False)
+        if rv_b:
+            return True,imax-rv2,imax-rv1   # TODO PRA verifier sur un exemple
+        else:
+            return False,-1,-1
+
     while i < imax and text[i] != sub[j]:
         i += 1
 
     if i == imax:  # sub can't be in text
         return False, -1, -1
+
+
 
     while i + ic < imax and j < jmax:
         leftChar = text[i + ic]

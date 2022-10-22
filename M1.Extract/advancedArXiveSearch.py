@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 base_url = "https://arxiv.org/search/advanced"
 
 
-def freeze(d):  # todo PRA pas propre et peu utile
-    return d.__str__()
+# def freeze(d):
+#     return d.__str__()
 
 
 def extractIdAndLinks(bs: BeautifulSoup):
@@ -177,14 +177,14 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                         ide, idLink, Links = extractIdAndLinks(element)
                         currentList.append(ide)
                         currentList.append(idLink)
-                        currentList.append(freeze(Links))
+                        currentList.append(str(Links))
 
                         # print("Id=", ide, idLink, Links)
 
                         element = currentSoup.find('div', {'class': 'tags'})
                         # print("Tags: ", extractArXiveTags(element))
 
-                        currentList.append(freeze(extractArXiveTags(element)))
+                        currentList.append(str(extractArXiveTags(element)))
 
                         element = currentSoup.find_all('p', {'class': 'title'})
                         # print("Title=", BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
@@ -200,7 +200,7 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                             # print("authors", a.getText())
                             authorsList.append(a.getText())
 
-                        currentList.append(freeze(authorsList))
+                        currentList.append(str(authorsList))
 
                         element = currentSoup.find('span', {'class': 'abstract-full'})
 

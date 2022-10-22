@@ -1,12 +1,20 @@
+# from setuptools import logging
+import urllib
+from datetime import datetime, timedelta
+
+import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat existe un setuptools logging
 import sqlite3
 import time
 from urllib.request import urlopen
 
-import feedparser
-from feedparser import FeedParserDict
-
 # /!\ Ne fonctionne que si results_per_iteration = 25
 from bs4 import BeautifulSoup
+
+import logging
+
+
+# import logging
+# import logging
 
 
 # to add dict in set, we need to freeze them
@@ -17,7 +25,7 @@ from bs4 import BeautifulSoup
 #         return tuple(freeze(value) for value in d)
 #     return d
 
-def freeze(d):
+def freeze(d):  # todo PRA pas propre et peu utile
     return d.__str__()
 
 
@@ -86,22 +94,38 @@ def extractDate(stringData: str):
         return stringData[ii:iend]
 
 
+logger = logging.getLogger(__name__)
+# logger.setLevel('WARNING')
+
+
+
 # base_url = "http://export.arxiv.org/api/query?"
-base_url = ""  # https://arxiv.org/search/advanced?"
+base_url = "https://arxiv.org/search/advanced"
 
 # Search parameters
 start = 0  # start at the first result
-total_results = 200000000  # want 20 total results
+total_results = 10000  # le max exploitable actuellement par le moteur de recherche
 results_per_iteration = 200  # 5 results at a time
 wait_time = 3  # number of seconds to wait beetween calls
 
-con = sqlite3.connect('../myArXive.db')  #: crée une connection.
+startDirectory: str = "./../"
+pdfRepository = "./Files/"  # directory must exist... TODO ?
+dataBase = 'myArXive.db'
+
+
+# logger.info('INFO !')
+
+con = sqlite3.connect(startDirectory + dataBase)  #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
 cur = con.cursor()
 
-cur.execute('''PRAGMA foreign_keys = OFF''')
-cur.execute('''DROP TABLE arXive''')
-cur.execute('''PRAGMA foreign_keys = ON''')
-
+try:  # TODO PRA faire plus propre en vidage de la base ?
+    cur.execute('''PRAGMA foreign_keys = OFF''')
+    cur.execute('''DROP TABLE arXive''')
+    cur.execute('''PRAGMA foreign_keys = ON''')
+    records = cur.fetchall()
+    logger.debug(records)
+except:
+    pass
 
 
 cur.execute('''CREATE TABLE IF NOT EXISTS arXive ( 
@@ -115,115 +139,141 @@ cur.execute('''CREATE TABLE IF NOT EXISTS arXive (
   pdate  TEXT,
   extraData  TEXT)''')
 
-# year = 2001
+# toute requette arXive est limitee a 10000 ^^
 
-#toute requette arXive est limitee a 10000 ^^
+for year in range(2022, 1991, -1):  # 1991 permière année de publication arXive
 
-for year in range(2010, 2000, -1):
-    for month in range(1, 12, 1):
-        search_query = "https://arxiv.org/search/advanced?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
+    datefrom = [ str(year)+"-01-1",str(year)+"-07-01"]  # la date de fin n'est pas precise, mais la date de début si ! bug 28 fev ?
+    dateto = [ str(year)+"-07-01",str(year+1)+"-1-1"   ]
+    for index in range(len(dateto)):
+        search_query = "?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
                        "&terms-0-field=all&classification-physics_archives=all" \
                        "&classification-include_cross_list=include&date-year=&date-filter_by=date_range" \
-                       "&date-from_date={0}-{1}&date-to_date={0}-{1}&date-date_type=submitted_date" \
-                       "&abstracts=show&size={3}&order=-announced_date_first".format(year,month,month+1,results_per_iteration)
+                       "&date-from_date={0}&date-to_date={1}&date-date_type=submitted_date" \
+                       "&abstracts=show&size={2}&order=-announced_date_first".format(datefrom[index], dateto[index],
+                                                                                     results_per_iteration)
 
-        print(f'Searching arXiv for {search_query}')
+        logger.info(f'Searching arXiv for {base_url+search_query}')
 
-
+        last_request_dt = datetime.min # .now()
+        required = timedelta(seconds=wait_time)
         for i in range(start, total_results, results_per_iteration):
-            print(f"Results {i + 1} - {i + results_per_iteration}")
+            logger.info("Results {} - {}".format(i + 1, i + results_per_iteration))
+            # logger.info("# pouet " + base_url + search_query + "&start=" + str(i))
 
-            print("# pouet " + base_url + search_query + "&start=" + str(i))
+            since_last_request = datetime.now() - last_request_dt
+            if since_last_request < required:
+                to_sleep = (required - since_last_request).total_seconds()
+                logger.info("Sleeping for %f seconds before urlopen", to_sleep)
+                time.sleep(to_sleep)
 
+            last_request_dt = datetime.now()
             data = []
-            with urlopen(base_url + search_query + "&start=" + str(i)) as url:
-                response = url.read()
+            try:
+                with urlopen(base_url + search_query + "&start=" + str(i)) as url:
 
-                # parse the response using feedparser
-                #  feed = feedparser.parse(response)
+                    since_last_request = datetime.now() - last_request_dt
+                    if since_last_request < required:
+                        to_sleep = (required - since_last_request).total_seconds()
+                        logger.info("Sleeping for %f seconds before url.read()", to_sleep)
+                        time.sleep(to_sleep)
 
-                # print("MMMMM: ",feedparser.parse(response))
+                    last_request_dt = datetime.now()
+                    response = url.read()
+
+                    # parse the response using feedparser
+                    #  feed = feedparser.parse(response)
+                    # print("MMMMM: ",feedparser.parse(response))
+                    # feed['feed']['summary']
+                    soup = BeautifulSoup(response, "html.parser")
+
+                    # print("@@",feed['feed']['summary'])
+                    # print("########",soup.contents)
+
+                    res = soup.find_all('li', {'class': 'arxiv-result'})
+
+                    if len(res) == 0:
+                        logger.info("No result for period")
 
 
-                # feed['feed']['summary']
-                soup = BeautifulSoup(response, "html.parser")
+                    for element in res:  # ,{'class' : 'arxiv-result'}):
+                        currentList = list()
+                        # print("####",element.__str__())
+                        # res= BeautifulSoup('<pre>%s</pre>' % element.getText())
+                        # print("##",element.__str__())#.text) # .getText())
+                        currentSoup = BeautifulSoup(element.__str__(), "html.parser")
+                        element = currentSoup.find('p')
+                        ide, idLink, Links = extractIdAndLinks(element)
+                        currentList.append(ide)
+                        currentList.append(idLink)
+                        currentList.append(freeze(Links))
 
-                # print("@@",feed['feed']['summary'])
+                        # print("Id=", ide, idLink, Links)
 
-                # print("########",soup.contents)
+                        element = currentSoup.find('div', {'class': 'tags'})
+                        # print("Tags: ", extractArXiveTags(element))
 
-                res = soup.find_all('li', {'class': 'arxiv-result'})
+                        currentList.append(freeze(extractArXiveTags(element)))
 
-                if len(res) == 0:
-                    break
+                        element = currentSoup.find_all('p', {'class': 'title'})
+                        # print("Title=", BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
 
-                for element in res:  # ,{'class' : 'arxiv-result'}):
-                    currentList = list()
-                    # print("####",element.__str__())
-                    # res= BeautifulSoup('<pre>%s</pre>' % element.getText())
-                    # print("##",element.__str__())#.text) # .getText())
-                    currentSoup = BeautifulSoup(element.__str__(), "html.parser")
+                        currentList.append(BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
 
-                    element = currentSoup.find('p')
+                        element = currentSoup.find_all('p', {'class': 'authors'})
+                        # print("authors=", BeautifulSoup(element.__str__(), "html.parser").find('a').getText().strip())
+                        # print("authors=", element.__str__())
+                        authorsList = list()
+                        for a in BeautifulSoup(element.__str__(), "html.parser").find_all('a'):
+                            # print("authors2=",BeautifulSoup(a.__str__(), "html.parser").find('a').getText)
+                            # print("authors", a.getText())
+                            authorsList.append(a.getText())
 
-                    ide, idLink, Links = extractIdAndLinks(element)
+                        currentList.append(freeze(authorsList))
 
-                    currentList.append(ide)
-                    currentList.append(idLink)
-                    currentList.append(freeze(Links))
+                        element = currentSoup.find('span', {'class': 'abstract-full'})
 
-                    # print("Id=", ide, idLink, Links)
+                        # print("Abstract-full=", element.contents[0])
 
-                    element = currentSoup.find('div', {'class': 'tags'})
+                        currentList.append(element.contents[0].strip())
 
-                    # print("Tags: ", extractArXiveTags(element))
+                        elem = currentSoup.findAll('p', {'class': 'is-size-7'})
 
-                    currentList.append(freeze(extractArXiveTags(element)))
+                        # for ele in elem:
+                        #     print("*",ele.__str__())
 
-                    element = currentSoup.find_all('p', {'class': 'title'})
-                    # print("Title=", BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
+                        arXiveExtraData = ""
+                        for el in elem:
+                            arXiveExtraData = arXiveExtraData + (el.getText())
 
-                    currentList.append(BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
+                        # print("date:", extractDate(arXiveExtraData))
 
-                    element = currentSoup.find_all('p', {'class': 'authors'})
-                    # print("authors=", BeautifulSoup(element.__str__(), "html.parser").find('a').getText().strip())
-                    # print("authors=", element.__str__())
-                    authorsList = list()
-                    for a in BeautifulSoup(element.__str__(), "html.parser").find_all('a'):
-                        # print("authors2=",BeautifulSoup(a.__str__(), "html.parser").find('a').getText)
-                        # print("authors", a.getText())
-                        authorsList.append(a.getText())
+                        currentList.append(extractDate(arXiveExtraData))
+                        currentList.append(arXiveExtraData)
 
-                    currentList.append(freeze(authorsList))
+                        data.append(currentList)
 
-                    element = currentSoup.find('span', {'class': 'abstract-full'})
+                        logger.debug(currentList)
+                        cur.execute('''insert into arXive ( entry_id,link,dlLinks,tags,title,authors,summary,pdate,extraData) values
+                     (?, ?, ?, ?, ?, ?, ?, ?, ?)''', currentList)
+                        con.commit()
+                        records = cur.fetchall()
+                        logger.debug("commit of current list: "+str(records))
 
-                    # print("Abstract-full=", element.contents[0])
+                    if len(res) < results_per_iteration:
+                        break # no needs to continue "&start="  loop
 
-                    currentList.append(element.contents[0].strip())
+            except urllib.error.URLError as e:
+                logger.error(e.reason)
+            # now = datetime.now()
+            #
+            # required = timedelta(seconds=wait_time)
+            # since_last_request = datetime.now() - last_request_dt
+            # if since_last_request < required:
+            #     to_sleep = (required - since_last_request).total_seconds()
+            #     logger.info("Sleeping for %f seconds", to_sleep)
+            #     time.sleep(to_sleep)
 
-                    elem = currentSoup.findAll('p', {'class': 'is-size-7'})
-
-                    # for ele in elem:
-                    #     print("*",ele.__str__())
-
-                    arXiveExtraData = ""
-                    for el in elem:
-                        arXiveExtraData = arXiveExtraData + (el.getText())
-
-                    # print("date:", extractDate(arXiveExtraData))
-
-                    currentList.append(extractDate(arXiveExtraData))
-                    currentList.append(arXiveExtraData)
-
-                    data.append(currentList)
-
-                    print(currentList)
-                    cur.execute('''insert into arXive ( entry_id,link,dlLinks,tags,title,authors,summary,pdate,extraData) values
-                 (?, ?, ?, ?, ?, ?, ?, ?, ?)''', currentList)
-
-            print(f"Sleeping for {wait_time} seconds")
-            time.sleep(wait_time)
 
 cur.close()
 con.commit()  # committe les transactions.

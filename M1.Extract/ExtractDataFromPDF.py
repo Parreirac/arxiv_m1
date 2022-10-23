@@ -230,12 +230,19 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         # 1/ Extract ref sign
         test = re.findall(r'(\[[a-z]*[0-9]*[a-z]*\])', text, re.IGNORECASE)
 
+
+        if len(test) <=1 :
+            test = re.findall(r'(\[[A-Z][a-z]+.*\d{4}\])', text)
+
+
         if len(test) <= 1:
             # test = re.findall(r'([0-9]*. )',text,re.IGNORECASE)
             test = re.findall(r'(\n\d+\..)', text, re.IGNORECASE)
 
             if len(test) != 0:
                 test = [x[1:] for x in test]
+
+
 
         if len(test) <= 1:
             logger.error("extraction of ref data failed in {}".format(filename))
@@ -331,7 +338,7 @@ _file = "../Files/0905.0197.pdf"  # biblio en [2 a 3 lettres 2 chiffres ] encore
 
 # ./.././Files/0605123.pdf   erreur TypeError('replace() argument 1 must be s
 file = "./.././Files/1008.1333.pdf"  # 1  bkal 2 hhuiu
-file = "./.././Files/1506.01432.pdf"
+file = "./.././Files/1511.04137.pdf"
 # a tester arXiv:1506.01432   arXiv:1505.07872  arXiv:1505.07751 arXiv:1505.02729
 
 if __name__ == '__main__':

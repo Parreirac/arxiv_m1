@@ -234,6 +234,8 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         if len(test) <=1 :
             test = re.findall(r'(\[[A-Z][a-z]+.*\d{4} *\])', text)
 
+        if len(test) <=1 :
+            test = re.findall(r'( \d{1,3}\.)', text)   # pas de sauts de ligne, juste des espaces :/
 
         if len(test) <= 1:
             # test = re.findall(r'([0-9]*. )',text,re.IGNORECASE)
@@ -251,7 +253,7 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         ref_dic = dict()
 
         current = 0
-        for i in range(len(test) - 1):
+        for i in range(len(test) - 1):  # todo pra ? tenter des virer les numéro incoherents avant (n° de page)
             k = test[i]
             i1 = text.find(k, i)
             if i1 != -1:
@@ -338,7 +340,7 @@ _file = "../Files/0905.0197.pdf"  # biblio en [2 a 3 lettres 2 chiffres ] encore
 
 # ./.././Files/0605123.pdf   erreur TypeError('replace() argument 1 must be s
 file = "./.././Files/1008.1333.pdf"  # 1  bkal 2 hhuiu
-file = "./.././Files/1507.00066.pdf"
+file = "./.././Files/1506.07116.pdf"
 # a tester arXiv:1506.01432   arXiv:1505.07872  arXiv:1505.07751 arXiv:1505.02729
 
 if __name__ == '__main__':

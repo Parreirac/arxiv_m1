@@ -222,7 +222,7 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         logger.error("No references label in file {}".format(filename))
 
     if indexRef != -1:
-        text = BufferText[indexRef:]
+        text = BufferText[indexRef-1:]
         # testé avec https://regex101.com/ !!!
         # we assume ref like \n [x] .....
         # en une colonne : '\n\[\d+\]' en 2 : '(\n|\. +)\[\d+\]'
@@ -232,12 +232,12 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
 
 
         if len(test) <=1 :
-            test = re.findall(r'(\[[A-Z][a-z]+.*\d{4}\])', text)
+            test = re.findall(r'(\[[A-Z][a-z]+.*\d{4} *\])', text)
 
 
         if len(test) <= 1:
             # test = re.findall(r'([0-9]*. )',text,re.IGNORECASE)
-            test = re.findall(r'(\n\d+\..)', text, re.IGNORECASE)
+            test = re.findall(r'(\n\d+\..)', text, re.IGNORECASE)  # dans ce cas la on devrait avoir au final 1. 2. 3. .... (avec des numero de pages :()
 
             if len(test) != 0:
                 test = [x[1:] for x in test]
@@ -338,7 +338,7 @@ _file = "../Files/0905.0197.pdf"  # biblio en [2 a 3 lettres 2 chiffres ] encore
 
 # ./.././Files/0605123.pdf   erreur TypeError('replace() argument 1 must be s
 file = "./.././Files/1008.1333.pdf"  # 1  bkal 2 hhuiu
-file = "./.././Files/1511.04137.pdf"
+file = "./.././Files/1507.00066.pdf"
 # a tester arXiv:1506.01432   arXiv:1505.07872  arXiv:1505.07751 arXiv:1505.02729
 
 if __name__ == '__main__':

@@ -2,7 +2,6 @@
 
 import logging.config
 import arxiv
-import settings
 import sqlite3
 from typing import Dict,  List
 

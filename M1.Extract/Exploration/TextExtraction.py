@@ -15,7 +15,7 @@ from pdfminer.pdfparser import PDFParser
 
 
 
-myFile = "1101.0309.pdf"
+myFile = "./../.././Files/1008.1333.pdf"
 output_string = StringIO()
 
 with open(myFile, 'rb') as in_file:
@@ -26,8 +26,6 @@ with open(myFile, 'rb') as in_file:
     interpreter = PDFPageInterpreter(rsrcmgr, device)
     i = 0
     for page in PDFPage.create_pages(doc):
-        i+=1
-        if (i ==10):
             interpreter.process_page(page)
 
 

@@ -8,7 +8,9 @@ from typing import List
 """
 overload overload PyPDF2.extract_text to have 2 basics filter
 - read horizontal text only
-- remove footer and header on each page
+- remove footer and header on each page => failed
+- remove artifacts (eg footer/header) 
+
 """
 
 # from PyPDF2 import PageObject
@@ -28,7 +30,7 @@ import logging
 logger2 = logging.getLogger("PyPDF2")
 logger2.setLevel(logging.INFO)
 
-# TODO PRA Peut etre utiles les autres fonctions pour virer les b'ET'
+
 # cela permettrait de virer (si c'est ca) explicitement les bas de page
 # sur 1001.1653 on ne peut couper parfaitement :(
 # actuellement quelques numero de page sont dans les references
@@ -179,8 +181,7 @@ def MyExtractTxtFromPdfPage(page: PyPDF2.PageObject, clean=True) -> str:
     #     if len(i) > 0:
     #         res=res+'\n'+i
     # return res
-    return "".join(parts)
-    # return "".join(parts)  # TODO PRA ? peut etre le rendre optionnel pour faciliter les traitements
+    return "".join(parts)# TODO PRA ? peut etre le rendre optionnel pour faciliter les traitements
 
 
 # pour virer la ligature (ligation)

@@ -10,7 +10,7 @@ import pprint
 from pdfreader import PDFDocument, SimplePDFViewer
 from pdfrw import PdfReader
 
-file = "1101.0309.pdf"
+file =  "./../.././Files/1008.1333.pdf"
 reader = PdfReader(file)
 # print(reader.keys())   #['/Size', '/Root', '/Info', '/ID']
 logger = logging.getLogger()
@@ -42,7 +42,7 @@ with open(file, "rb") as f:
     #     print("pii", page_inline_images)
     #     print("ps", page_strings)
 
-    viewer.navigate(1)
+    viewer.navigate(2)
     viewer.render()
     viewer.canvas
     page_images = viewer.canvas.images
@@ -52,12 +52,12 @@ with open(file, "rb") as f:
     page_strings = viewer.canvas.strings
     # print("pi", page_images)
     # print("pf", page_forms)
-    # print("pt","".join( page_text))
+    # print("".join( page_text))
     # print("pii", page_inline_images)
     # print("ps", "".join(page_strings))
-    print(viewer.annotations)
+    # print(viewer.annotations)
 
-
+    print("".join(page_strings))
     # viewer.render()
     #
     # print(viewer.canvas.text_content)

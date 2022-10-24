@@ -17,11 +17,11 @@ from PyPDF2 import PdfFileReader, DocumentInformation
 from MyStringSearch import Myfind
 import logging
 
-logger2 = logging.getLogger("PyPDF2")
-logger2.setLevel(logging.INFO)  # TODO PRA cela fonctionne ?
+# logger2 = logging.getLogger(__name__)
+# logger2.setLevel(logging.INFO)  # TODO PRA cela fonctionne ?
 
 ref_list = ["REFERENCES", "References", "Bibliography", "REFERENCE", "Références", "R´ ef´ erences", "REFRENCES",
-            "REFERENCIAS", "Источники"]
+            "REFERENCIAS", "Источники","DAFTAR REFERENSI"]  # russe, indonesie
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,44 @@ faire un clean sur les mots clés :   TODO PRA
 2209.14299 (word) j'ai les 2 mails mais pas la biblio
 """
 
+"""Check if list seems to be a valid references list"""
+
+
+def checkNumericalReferences(data: list):
+    intList = []
+    for d in data:
+        if isinstance(d, int):
+            intList.append(d)
+        if isinstance(d, str):
+            intList.append(int(float(d.strip())))
+
+    minref = 10000000
+    maxref = -10000000
+
+    for i in intList:
+        minref = min(minref, i)
+        maxref = max(maxref, i)
+
+    if minref == 1 and maxref == len(intList):
+        return True
+
+    if minref == maxref:
+        return False
+
+    #  compter les trous, si plus d'un certain % => faux sinon vrai
+    iprev = minref
+    error = 0
+    for i in intList:
+        if (i - iprev) <= 1:
+            iprev = i
+        else:
+            error += 1
+
+    rv = (error <= .07 * len(intList))  # TODO PRA ?  we could try to remove errors !
+    if not rv:
+        logger.debug("list rejected {} s= {}".format(intList, 100. * float(error) / float(len(intList))))
+    return rv
+
 
 def addValue(dico: dict, key: str, src: Optional[DocumentInformation]):
     dico[key] = src.getText(key)
@@ -72,6 +110,7 @@ def getInfoFromOutlines(pdf, _text):
         _outline = []
     finally:
         pass
+
 
 def complexRSearch(buff: str, sub: str):  # TODO mettre un start ?
     rv = buff.rfind(sub)
@@ -116,7 +155,6 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         for pageNumber in range(pdf.numPages):
             page = pdf.getPage(pageNumber)
 
-
             # logger.debug("convert page {} ".format(pageNumber))
             curtext = MyExtractTxtFromPdfPage(page)  # .extract_text(orientations=0)
             BufferText += curtext
@@ -145,6 +183,9 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
     #     return rv_fileMetadata, rv_subtitle, rv_keywords, rv_reference_list
     #
     # print("@@\n", BufferText, "\n@@\n")
+
+    # TODO PRA  1002.0102  -> c'est un livre il y a un table of content. donc on doit prendre la deuxieme occurence dans
+    # ce cas...
 
     currentStartIndex = 0
     if arXiveTitle is not None:  # we uses true title to reduce subtitle size (we do not need to assume it from pdf file
@@ -222,45 +263,55 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         logger.error("No references label in file {}".format(filename))
 
     if indexRef != -1:
-        text = BufferText[indexRef-1:]
+        text = BufferText[indexRef - 1:]
         # testé avec https://regex101.com/ !!!
         # we assume ref like \n [x] .....
         # en une colonne : '\n\[\d+\]' en 2 : '(\n|\. +)\[\d+\]'
 
         # 1/ Extract ref sign
-        test = re.findall(r'(\[[a-z]*[0-9]*[a-z]*\])', text, re.IGNORECASE)
 
+        test = re.findall(r'(\[[0-9]*\])', text)
 
-        if len(test) <=1 :
+        if len(test) <= 1:
+            test = re.findall(r'(\[[a-z]+[0-9]*[a-z]*\])', text, re.IGNORECASE)
+
+        if len(test) <= 1:
             test = re.findall(r'(\[[A-Z][a-z]+.*\d{4} *\])', text)
 
-        if len(test) <=1 :
-            test = re.findall(r'( \d{1,3}\.)', text)   # pas de sauts de ligne, juste des espaces :/
+
+
+        if len(test) <= 1:
+            test = re.findall(r'( \d{1,3}\.)', text)  # pas de sauts de ligne, juste des espaces :/
+            if len(test) > 0:
+                rv = checkNumericalReferences(test)
+                if not rv:
+                    test = []
 
         if len(test) <= 1:
             # test = re.findall(r'([0-9]*. )',text,re.IGNORECASE)
-            test = re.findall(r'(\n\d+\..)', text, re.IGNORECASE)  # dans ce cas la on devrait avoir au final 1. 2. 3. .... (avec des numero de pages :()
+            test = re.findall(r'(\n\d+\.)', text,
+                              re.IGNORECASE)  # dans ce cas la on devrait avoir au final 1. 2. 3. .... (avec des numero de pages :()
 
             if len(test) != 0:
                 test = [x[1:] for x in test]
+                rv = checkNumericalReferences(test)
+                if not rv:
+                    test = []
 
 
 
-        if len(test) <= 1:
-            logger.error("extraction of ref data failed in {}".format(filename))
-
-        # 2/ create dict with references :
+            # 2/ create dict with references :
         ref_dic = dict()
 
         current = 0
         for i in range(len(test) - 1):  # todo pra ? tenter des virer les numéro incoherents avant (n° de page)
             k = test[i]
-            i1 = text.find(k, i)
+            i1 = text.find(k, current)
             if i1 != -1:
                 i1 += len(k)
             kp = test[i + 1]
             i2 = text.find(kp, i1)
-            if (i1 != -1):
+            if i1 != -1:
                 current = i2 + len(kp)
             ref_dic[k] = text[i1:i2]
 
@@ -270,11 +321,40 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
             if i1 != -1:
                 ref_dic[k] = text[i1:]  # TODO PRA on doit trouver mieux pour la fin !
 
+        if len(ref_dic) == 0:  # create own table using end of refence
+            test = re.findall(r'(.*\.\n)', text)  # get last full line of ref
+
+            current = 1
+            for i in range(len(test)):
+                lastcurrent = current
+                k = str(i + 1)
+                sub = test[i]
+                i1 = text.find(sub, lastcurrent)
+                current = i1 + len(sub)
+                ref_dic[k] = text[lastcurrent:current]
+
+        if len(ref_dic) == 0:  # create own table using beginning (no end .)
+            test = re.findall(r'(\n[A-Z][a-z]*)', text)  # get last full line of ref
+
+            current = 1
+            for i in range(len(test) - 1):
+                k = str(i + 1)
+                sub = test[i + 1]
+                i1 = text.find(sub, current)
+                i1 += len(sub)
+                ref_dic[k] = text[current:i1]
+                current = i1
+
+        # (\n[A-Z][a-z]*) qui commence
+
         rv_reference_list = ref_dic
 
-    logger.debug("rv_reference_list {}".format(rv_reference_list))
-    # -----------------------------------------
+        if len(ref_dic) <= 1:
+            logger.error("extraction of ref data failed in {}".format(filename))
 
+    logger.debug("rv_reference_list {}".format(rv_reference_list))
+
+    # -----------------------------------------
     # for debug purpose, extract REFERENCES from internal PDF goto REFERENCES (in annots)
     # unfortunately only available with LaTEX
     for page in range(pdf.numPages):
@@ -340,8 +420,15 @@ _file = "../Files/0905.0197.pdf"  # biblio en [2 a 3 lettres 2 chiffres ] encore
 
 # ./.././Files/0605123.pdf   erreur TypeError('replace() argument 1 must be s
 file = "./.././Files/1008.1333.pdf"  # 1  bkal 2 hhuiu
-file = "./.././Files/1506.07116.pdf"
+file = "./.././Files/1506.05282.pdf"
 # a tester arXiv:1506.01432   arXiv:1505.07872  arXiv:1505.07751 arXiv:1505.02729
+# ./.././Files/1504.04716.pdf # TODO mal découpé :s encore
+# ./.././Files/1502.05974.pdf
+# ./.././Files/1509.07897.pdf
+# ./.././Files/1507.05895.pdf
 
+file = "./.././Files/1302.4956.pdf"  # ==== > etrangement vide !  ./.././Files/1302.1561.pdf avec une figure dans les ref
+# ./.././Files/1509.07897.pdf # le mot references n'apparait pas :
+# ./.././Files/1507.05895.pdf # le mot references n'apparait pas :
 if __name__ == '__main__':
     print(ExtractDataFrom(file))

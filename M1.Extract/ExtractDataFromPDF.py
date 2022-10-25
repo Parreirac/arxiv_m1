@@ -21,7 +21,7 @@ import logging
 # logger2.setLevel(logging.INFO)  # TODO PRA cela fonctionne ?
 
 ref_list = ["REFERENCES", "References", "Bibliography", "REFERENCE", "Références", "R´ ef´ erences", "REFRENCES",
-            "REFERENCIAS", "Источники","DAFTAR REFERENSI"]  # russe, indonesie
+            "REFERENCIAS", "Источники", "DAFTAR REFERENSI"]  # russe, indonesie
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +57,17 @@ faire un clean sur les mots clés :   TODO PRA
 """Check if list seems to be a valid references list"""
 
 
-def checkNumericalReferences(data: list):
+def checkNumericalReferencesValidity(data: list):
     intList = []
     for d in data:
         if isinstance(d, int):
             intList.append(d)
-        if isinstance(d, str):
-            intList.append(int(float(d.strip())))
+        if isinstance(d, str) :
+            if d.isnumeric() or d.strip(" .").isnumeric():  # todo pra strip 00
+                intList.append(int(float(d.strip())))
+
+    if len(intList) == 0: # not an integer list
+        return True
 
     minref = 10000000
     maxref = -10000000
@@ -78,6 +82,9 @@ def checkNumericalReferences(data: list):
     if minref == maxref:
         return False
 
+    if minref == 0:  # problem is not only page number
+        return False
+
     #  compter les trous, si plus d'un certain % => faux sinon vrai
     iprev = minref
     error = 0
@@ -86,11 +93,26 @@ def checkNumericalReferences(data: list):
             iprev = i
         else:
             error += 1
+            iprev = i
 
-    rv = (error <= .07 * len(intList))  # TODO PRA ?  we could try to remove errors !
+    rv = (error <= .077 * len(intList))  # TODO PRA ?  we could try to remove errors !
     if not rv:
         logger.debug("list rejected {} s= {}".format(intList, 100. * float(error) / float(len(intList))))
     return rv
+
+
+def checkReferencesDict(data: dict):
+    if len(data.keys()) < 2:
+        return False
+
+    for k, v in data.items():
+        if len(k) == 0 or len(v) == 0:
+            return False
+
+    if not checkNumericalReferencesValidity(list(data.keys())):
+        return False
+
+    return True
 
 
 def addValue(dico: dict, key: str, src: Optional[DocumentInformation]):
@@ -278,12 +300,10 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         if len(test) <= 1:
             test = re.findall(r'(\[[A-Z][a-z]+.*\d{4} *\])', text)
 
-
-
         if len(test) <= 1:
             test = re.findall(r'( \d{1,3}\.)', text)  # pas de sauts de ligne, juste des espaces :/
             if len(test) > 0:
-                rv = checkNumericalReferences(test)
+                rv = checkNumericalReferencesValidity(test)
                 if not rv:
                     test = []
 
@@ -294,11 +314,9 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
 
             if len(test) != 0:
                 test = [x[1:] for x in test]
-                rv = checkNumericalReferences(test)
+                rv = checkNumericalReferencesValidity(test)
                 if not rv:
                     test = []
-
-
 
             # 2/ create dict with references :
         ref_dic = dict()
@@ -312,45 +330,56 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
             kp = test[i + 1]
             i2 = text.find(kp, i1)
             if i1 != -1:
-                current = i2 + len(kp)
+                current = i2 #+ len(kp)
             ref_dic[k] = text[i1:i2]
 
         if len(test) > 0:
             k = test[-1]  # todo pra rechercher dans mon code les test[len(test)-1] pour mettre test[-1]
-            i1 = text.find(k)
-            if i1 != -1:
+            i1 = text.find(k,current) + len(k)
+            if i1 != -1: # TODO et si -1 ?????
                 ref_dic[k] = text[i1:]  # TODO PRA on doit trouver mieux pour la fin !
+
+        if not checkReferencesDict(ref_dic):
+            logger.debug("invalidate References dict {}".format(filename))
+            ref_dic.clear()
 
         if len(ref_dic) == 0:  # create own table using end of refence
             test = re.findall(r'(.*\.\n)', text)  # get last full line of ref
+            if len(test) > 1:
+                current = 1
+                for i in range(len(test)):
+                    lastcurrent = current
+                    k = str(i + 1)
+                    sub = test[i]
+                    i1 = text.find(sub, lastcurrent)
+                    current = i1 + len(sub)
+                    ref_dic[k] = text[lastcurrent:current]
 
-            current = 1
-            for i in range(len(test)):
-                lastcurrent = current
-                k = str(i + 1)
-                sub = test[i]
-                i1 = text.find(sub, lastcurrent)
-                current = i1 + len(sub)
-                ref_dic[k] = text[lastcurrent:current]
+                if not checkReferencesDict(ref_dic):
+                    logger.debug("invalidate References dict {}".format(filename))
+                    ref_dic.clear()
 
         if len(ref_dic) == 0:  # create own table using beginning (no end .)
             test = re.findall(r'(\n[A-Z][a-z]*)', text)  # get last full line of ref
+            if len(test) > 1:
+                current = 1
+                for i in range(len(test) - 1):
+                    k = str(i + 1)
+                    sub = test[i + 1]
+                    i1 = text.find(sub, current)
+                    i1 += len(sub)
+                    ref_dic[k] = text[current:i1]
+                    current = i1
 
-            current = 1
-            for i in range(len(test) - 1):
-                k = str(i + 1)
-                sub = test[i + 1]
-                i1 = text.find(sub, current)
-                i1 += len(sub)
-                ref_dic[k] = text[current:i1]
-                current = i1
-
+                if not checkReferencesDict(ref_dic):
+                    logger.debug("invalidate References dict {}".format(filename))
+                    ref_dic.clear()
         # (\n[A-Z][a-z]*) qui commence
 
         rv_reference_list = ref_dic
 
         if len(ref_dic) <= 1:
-            logger.error("extraction of ref data failed in {}".format(filename))
+            logger.error("extraction of ref data failed in {}, try ....".format(filename))
 
     logger.debug("rv_reference_list {}".format(rv_reference_list))
 
@@ -428,6 +457,15 @@ file = "./.././Files/1506.05282.pdf"
 # ./.././Files/1507.05895.pdf
 
 file = "./.././Files/1302.4956.pdf"  # ==== > etrangement vide !  ./.././Files/1302.1561.pdf avec une figure dans les ref
+
+file = "./.././Files/1511.07373.pdf"  # preferences apparait apres les references :(
+file = "./.././Files/1509.03247.pdf"
+
+# TODO
+# arXiv:1506.00366
+# arXiv:1508.06235
+file = "./.././Files/1506.00366.pdf"
+
 # ./.././Files/1509.07897.pdf # le mot references n'apparait pas :
 # ./.././Files/1507.05895.pdf # le mot references n'apparait pas :
 if __name__ == '__main__':

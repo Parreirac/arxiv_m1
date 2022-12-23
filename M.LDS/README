@@ -1,0 +1,3 @@
+Ce module est la déclinaison du projet fil rouge pour le cours languages en data-sciences
+
+Goal: Write a Flask application that provides an API that reads an uploaded pdf, extract its metadata & text them available for consumption by the user.

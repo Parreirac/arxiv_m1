@@ -1,4 +1,4 @@
-"""module with the Business logic """
+"""Requests HTTP Library"""
 import requests
 from bs4 import BeautifulSoup
 

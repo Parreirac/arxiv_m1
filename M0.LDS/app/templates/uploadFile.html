@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
+  </head>
+  <body>
+    <h1>Welcome to my arXive file enhancement site</h1>
+    <h2>upload pdf from arXive to get metadata</h2>
+
+    <form id="my-dropzone"  name="formdz" action="{{ url_for('upload') }}" class="dropzone">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.js">
+    </script>
+</form>
+    <script>
+
+ let  _this;
+  Dropzone.options.myDropzone = {
+      acceptedFiles: 'application/pdf',
+      //autoQueue: false,
+      maxFiles: 3,
+    init: function() {
+           this.on("maxfilesexceeded", function(file){
+                this.removeFile(file);
+        alert("No more files please!");
+    });
+
+      this.on("addedfile", function(file) {
+
+        // Create the remove button
+        var removeButton = Dropzone.createElement("<button>Remove file</button>");
+
+        // Capture the Dropzone instance as closure.
+       // var
+          _this = this;
+        //var _name = file.name;
+        // Listen to the click event
+        removeButton.addEventListener("click", function(e) {
+          // Make sure the button click doesn't submit the form:
+          e.preventDefault();
+          e.stopPropagation();
+
+          _this.removeFile(file);
+
+            var xhttp = new XMLHttpRequest();
+            // xhttp.open("POST", "{ { url_for('remove',file=myfilename) } }", true);
+            var url  = "{{ url_for('remove',file="") }}"
+            url += file.name
+            xhttp.open("POST", url, true);
+            xhttp.send()
+        });
+        // Add the button to the file preview element.
+        file.previewElement.appendChild(removeButton);
+      });
+    }
+  };
+
+        function validerMonFormulaire(monFormulaire) {
+
+  const acceptedFiles = _this.getAcceptedFiles();
+  var texte = acceptedFiles[0].name
+  for (let i = 1; i < acceptedFiles.length; i++) {
+    texte+="&"+acceptedFiles[i].name;
+  }
+
+              var xhttp = new XMLHttpRequest();
+
+              xhttp.open("POST", "{{ url_for('start2_files',files="") }}"+texte, true);
+            xhttp.send()
+
+
+            xhttp.timeout = 4000;
+            xhttp.onload = function() {
+             //   alert(`Loaded: ${xhttp.status} ${xhttp.response}`);
+                window.location.reload();
+                };
+
+            xhttp.onerror = function() { // ne se déclenche que si la demande n'a pas pu être faite du tout
+            alert(`Network Error`);
+            };
+
+            //window.location.reload();
+
+            return false; // pour bloquer l'evt false
+	}
+    </script>
+             <form id="myform"     onsubmit="return validerMonFormulaire(this);" >
+
+      <p><input type="submit" value="Submit"></p>
+        </form>
+
+
+  </body>
+</html>

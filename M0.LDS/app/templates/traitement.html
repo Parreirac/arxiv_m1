@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma page</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" >
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"  ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" ></script>
+
+</head>
+<body>
+  <div class="container-fluid   ">
+    <h1>Ma page</h1>
+<div class="row d-flex align-items-stretch">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header">
+            "Aide"
+          </div>
+          <div class="card-body">
+              <ul>
+                  <li>Vous pouvez obtenir les routes en ajoutant  <a href= {{url_for('get_doc') }}  > /doc</a> à l'url </li>
+                  <li>De même pour la reinitialisation avec <a href= {{url_for('delete_session') }}  > /delete_session </a> </li>
+              </ul>
+          </div>
+        </div>
+      </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                Fichiers téléchargés
+                </div>
+                <div class="card-body">
+                 <ul>
+{% for item in data %}
+    {% set strfile  = url_for('handle_file',num='') %}
+    <li><a href= {{strfile ~ loop.index }}  > {{item  }}   </a>   </li>
+{% endfor %}
+</ul>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- <br> -->
+<nav>
+<div class="nav nav-tabs" id="nav-tab" role="tablist">
+<a class="nav-item nav-link active" id="nav-metadata-tab" data-toggle="tab" href="#nav-metadata" role="tab" aria-controls="nav-metadata" aria-selected="true">Métadonnées</a>
+<a class="nav-item nav-link" id="nav-text-tab" data-toggle="tab" href="#nav-text" role="tab" aria-controls="nav-text" aria-selected="false">Texte</a>
+<a class="nav-item nav-link" id="nav-url-tab" data-toggle="tab" href="#nav-url" role="tab" aria-controls="nav-url" aria-selected="false"  >semanticscholar</a>
+</div>
+</nav>
+<div class="tab-content" id="nav-tabContent">
+<div class="tab-pane fade show active" id="nav-metadata" role="tabpanel" aria-labelledby="nav-metadata-tab">
+
+   {% for key, value in dataMeta.items() %}
+      <h2> {{key}} :  {{value}}</h2>
+   {% endfor %}
+
+</div>
+
+<div class="tab-pane fade" id="nav-text" role="tabpanel" aria-labelledby="nav-text-tab">
+
+ <h2> {{dataTexte  }} </h2>
+ </div>
+<div class="tab-pane fade" id="nav-url" role="tabpanel" aria-labelledby="nav-url-tab">
+
+    {{datatab3 | safe }}
+
+</div>
+</div>
+  </div>
+</body>
+</html>

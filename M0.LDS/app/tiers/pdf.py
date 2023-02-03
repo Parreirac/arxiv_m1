@@ -7,8 +7,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_watermark(filename):
-    """vertically reads the watermark on the first page """
-    pdf = PdfReader(filename)  # , strict=False ??? test file's existence by caller todo with ????
+    """vertically reads the watermark on the first page
+    test file's existence by caller"""
+    pdf = PdfReader(filename)
     logger.info("getWatermark for %s", filename)
     page = pdf.pages[0]
     text = page.extract_text(90)

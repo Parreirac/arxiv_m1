@@ -1,5 +1,5 @@
 Ce module est la déclinaison du projet fil rouge pour le cours langages en data-sciences
-Le code est sous https://github.com/Parreirac/arxiv_m1/tree/master/M.LDS.
+Le code est sous https://github.com/Parreirac/arxiv_m1/tree/master/M0.LDS.
 
 # Sujet/Goal 
 Write a Flask application that provides an API that reads an uploaded pdf,extract its metadata & text them available for consumption by the user.

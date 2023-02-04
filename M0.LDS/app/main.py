@@ -492,4 +492,4 @@ def my_init():
 
 if __name__ == '__main__':
     my_init()
-    app.run(debug=False,host='0.0.0.0', port='5000')
+    app.run(debug=False,host='0.0.0.0', port=5000)

@@ -213,14 +213,14 @@ for year in range(END_YEAR, START_YEAR, -1):
                         # for ele in elem:
                         #     print("*",ele.__str__())
 
-                        arXiveExtraData = ""
+                        arXivExtraData = ""
                         for el in elem:
-                            arXiveExtraData = arXiveExtraData + (el.getText())
+                            arXivExtraData = arXivExtraData + (el.getText())
 
-                        # print("date:", extractDate(arXiveExtraData))
+                        # print("date:", extractDate(arXivExtraData))
 
-                        currentList.append(extractDate(arXiveExtraData))
-                        currentList.append(arXiveExtraData)
+                        currentList.append(extractDate(arXivExtraData))
+                        currentList.append(arXivExtraData)
 
                         data.append(currentList)
 

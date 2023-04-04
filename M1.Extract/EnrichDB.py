@@ -1,5 +1,5 @@
 """
-si le fichier.pdf n'est pas en local, le charger.
+Si le fichier.pdf n'est pas en local, le charger.
 
 Ajouter a la DBB des colonnes :
 - l'outil de production du pdf
@@ -9,83 +9,87 @@ Ajouter a la DBB des colonnes :
 
 Prendre une ligne de la DB et remplir les données manquantes
 """
-from datetime import datetime, timedelta
-import time
-
-
-import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat
+from langid.langid import LanguageIdentifier, model
+from ExtractDataFromPDF import ExtractDataFrom
 import logging
 import sqlite3
+import time
+from datetime import datetime, timedelta
 from os.path import exists
+
+import requests
+
+import settings
+
+
 # from typing import Dict
 
-import requests as requests
-from ExtractDataFromPDF import ExtractDataFrom
-
-startDirectory: str = "./../"
-pdfRepository = "./Files/"  # directory must exist... TODO ?
-dataBase = 'myArXive.db'
-downloadMissingFile = True
+# STARTDIRECTORY: str = "" #"./../"
+# PDFREPOSITORY = "D:/mon_depot/Files/"  # directory must exist... TODO ?
+# dataBase = 'myArXive.db'
+DOWNLOADMISSINGFILE = False
 # To allow download of missing file
-AllowRecompute = True  # set to True to recompute additional Data
-wait_time = 3
+ALLOWRECOMPUTE = True  # set to True to recompute additional Data
+WAIT_TIME = 3
 # sql_request = '''SELECT * from arXive '''
-sql_request = '''SELECT * from arXive where pdate like '%2015' '''
-
+sql_request: str = '''SELECT * from arXive'''  # where pdate like '%2007' '''
 
 logger = logging.getLogger()
 
 
-def createDict(string: str) -> dict[str, str] | None:
+def create_dict(string: str) -> dict[str, str] | None:
+    '''Création d'un dictionnaire à partir d'une string'''
     if not string.startswith('{'):
         return None
     tab = string[1: len(string) - 1].split("'")
 
-    returnValue = dict()
+    return_value = {}
     for i in range(0, len(tab) - 1, 4):
-        returnValue[tab[i + 1]] = tab[i + 3]
+        return_value[tab[i + 1]] = tab[i + 3]
 
-    return returnValue
+    return return_value
 
 
-def createList(string: str) -> list[str] | None:
+def create_list(string: str) -> list[str] | None:
+    '''Création d'une liste à partir d'une string'''
     if not string.startswith('['):
         return None
     tab = string[1: len(string) - 1].split("'")
 
-    returnValue = list()
+    return_value = []
     for i in range(1, len(tab), 2):
-        returnValue.append(tab[i])
-    return returnValue
-
+        return_value.append(tab[i])
+    return return_value
 
 
 logger.info('Start !')
-con = sqlite3.connect(settings.startDirectory + settings.dataBase)  #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
+#: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
+
+con = sqlite3.connect(settings.STARTDIRECTORY + settings.DATABASE)
 cur = con.cursor()
 
 cur.execute('''PRAGMA table_info(arXive)''')
 records = cur.fetchall()
-required = timedelta(seconds=wait_time)
+required = timedelta(seconds=WAIT_TIME)
 
-
-ColumnAlreadyAdded = False
+COLUMNALREADYADDED = False
 
 for element in records:
     if element[1] == 'mCOMMENTS':
-        ColumnAlreadyAdded = True
+        COLUMNALREADYADDED = True
         break
 
-if not ColumnAlreadyAdded:
+if not COLUMNALREADYADDED:
+    # REFERENCES est un mot clé j'ajoute un prefixe m manuel, c calculé, e extrait
     cur.execute('''ALTER TABLE arXive ADD COLUMN mCOMMENTS TEXT''')
     cur.execute('''ALTER TABLE arXive ADD COLUMN cFIRST_CAT TEXT''')
     cur.execute('''ALTER TABLE arXive ADD COLUMN eSUBTITLE TEXT''')
     cur.execute('''ALTER TABLE arXive ADD COLUMN eKEYWORDS TEXT''')
-    cur.execute('''ALTER TABLE arXive ADD COLUMN eREFERENCES TEXT''')  #REFERENCES est un mot clé j'ajoute un prefixe m manuel, c calculé, e extrait
+    cur.execute('''ALTER TABLE arXive ADD COLUMN eREFERENCES TEXT''')
     cur.execute('''ALTER TABLE arXive ADD COLUMN ePDF_METADATA TEXT''')
+    cur.execute('''ALTER TABLE arXive ADD COLUMN eLanguage TEXT''')
     # cur.execute('''ALTER TABLE arXive ADD COLUMN APPLICATION TEXT''')
-
-    '''
+'''
 Pour supprimer faire dans le DB browser:
 ALTER table arXive drop SUBTITLE
 ALTER table arXive drop FirstCat
@@ -97,23 +101,25 @@ ALTER table arXive drop APPLICATION
 
 # cur.execute('''SELECT * from arXive''')
 # For debug purpose, filter database
-cur.execute(sql_request )
+cur.execute(sql_request)
 
 records = cur.fetchall()
-logger.debug("{} records to handle".format(len(records)))
+logger.debug("%s records to handle",len(records))
 
 last_request_dt = datetime.min  # .now()
+
+identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
 
 for row in records:
     entry_id = row[0]
     link = row[1]
     dlLinks = row[2]
-    dlLinks = createDict(dlLinks)
+    dlLinks = create_dict(dlLinks)
     tags = row[3]
-    tags = createList(tags)
+    tags = create_list(tags)
     title = row[4]
     authors = row[5]
-    authors = createList(authors)
+    authors = create_list(authors)
     summary = row[6]
     pdate = row[7]
     extraData = row[8]
@@ -123,16 +129,16 @@ for row in records:
     KEYWORDS = row[12]
     REFERENCES = row[13]
     PDF_METADATA = row[14]
+    eLanguage = row[15]
 
-
-    if (not AllowRecompute) and FirstCat is not None:
+    if not ALLOWRECOMPUTE:  # or  FirstCat is not None:
         continue
-    FirstCat = tags[0]
+    # FirstCat = tags[0]
 
-    var = ""
+    #var = ""
 
     if "pdf" not in dlLinks:
-        logger.warning("ArXIve gives no pdf for {}".format(entry_id))
+        logger.warning("ArXIve gives no pdf for %s",entry_id)
         continue
 
     url = dlLinks['pdf']
@@ -141,9 +147,8 @@ for row in records:
 
     fileName = tmpTab[len(tmpTab) - 1] + ".pdf"
 
-
-    if not exists(startDirectory+pdfRepository + fileName):  # download file
-        if downloadMissingFile:
+    if not exists(settings.STARTDIRECTORY + settings.PDFREPOSITORY + fileName):  # download file
+        if DOWNLOADMISSINGFILE:
             since_last_request = datetime.now() - last_request_dt
             if since_last_request < required:
                 to_sleep = (required - since_last_request).total_seconds()
@@ -151,33 +156,32 @@ for row in records:
                 time.sleep(to_sleep)
 
             last_request_dt = datetime.now()
-            logger.info("download file {}".format(fileName))
+            logger.info("download file %s",fileName)
             r = requests.get(url)
             # Retrieve HTTP meta-data
 
-            logger.debug("status_code {}".format(r.status_code))
-            logger.debug("headers {}".format(r.headers['content-type']))
-            logger.debug("encoding {}".format(r.encoding))
+            logger.debug("status_code %s", r.status_code)
+            logger.debug("headers %s", r.headers['content-type'])
+            logger.debug("encoding %s", r.encoding)
 
             if r.status_code != 200:
-                logger.warning("Error downloading {}, status_code = {}".format(fileName, r.status_code))
+                logger.warning("Error downloading %s, status_code = %s", fileName, r.status_code)
                 continue  # TODO PRA a tester
 
-            with open(startDirectory+pdfRepository + fileName, 'wb') as f:
+            with open(settings.STARTDIRECTORY + settings.PDFREPOSITORY + fileName, 'wb') as f:
                 f.write(r.content)
         else:
             continue
 
     try:
 
-        # rv_creator, rv_producer, rv_subtitle, rv_keywords, rv_reference_list, rv_reference_ctrl_set
         rv_fileMetadata, rv_subtitle, rv_keywords, rv_reference_list = ExtractDataFrom(
-            startDirectory + pdfRepository + fileName, title, authors, summary)
+            settings.STARTDIRECTORY + settings.PDFREPOSITORY + fileName, title, authors, summary)
 
-    except Exception :  # TODO PRA etre plus explicite
-        logger.error("file {} not extracted ".format(pdfRepository + fileName), exc_info=True)
+    except Exception:  # TODO PRA etre plus explicite
+        logger.error("file %s not extracted ", settings.PDFREPOSITORY + fileName, exc_info=True)
     else:
-        sql = ''' UPDATE arXive
+        SQL = ''' UPDATE arXive
                       SET cFIRST_CAT = ? ,
                           eSUBTITLE = ? ,
                           eKEYWORDS = ? ,
@@ -185,10 +189,18 @@ for row in records:
                           ePDF_METADATA = ?
                       WHERE entry_id = ?'''
 
+        #                          eLanguage = ?
+
+        # b = TextBlob(summary)
+        # langue = b.detect_language()
+
+
+        # langue = res[0]+'_'+str(int(100*res[1]))
         data = (
             FirstCat, rv_subtitle, rv_keywords, repr(rv_reference_list), repr(rv_fileMetadata),
+            # langue,
             entry_id)
-        cur.execute(sql, data)  # TODO PRA ajouter un test avant sur un verrou sur la BDD !
+        cur.execute(SQL, data)  # TODO PRA ajouter un test avant sur un verrou sur la BDD !
         records = cur.fetchall()
 
 cur.close()

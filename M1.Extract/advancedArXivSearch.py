@@ -1,29 +1,43 @@
-from datetime import datetime, timedelta
+"""
+Create sqlite3 database using "https://arxiv.org/search/advanced" in order to get ArXiv Metedata
+for [cs.AI] from START_YEAR to END_YEAR.
+"""
 
-import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat existe un setuptools logging
+import logging
 import sqlite3
 import time
+from datetime import datetime, timedelta
+from sqlite3 import Cursor
 from urllib.request import urlopen
-
 
 from bs4 import BeautifulSoup
 
-import logging
+BASE_URL = "https://arxiv.org/search/advanced"
 
+# Search parameters
+
+# start at the first result
+START = 0
+# le max exploitable actuellement par le moteur de recherche
+TOTAL_RESULTS = 10000
+# /!\ Must be in the range from arXive search UI
+RESULTS_PER_ITERATION = 200
+# number of seconds to wait beetween calls
+WAIT_TIME = 3
+
+START_DIRECTORY: str = "D:/mon_depot/"
+
+PDF_REPOSITORY = "D:/mon_depot/Files/"  # directory must exist... TODO ?
+DATABASE = 'myArXive.db'
+
+START_YEAR = 1991  # 1991 première année de publication arXiv
+END_YEAR = 2022
 
 logger = logging.getLogger(__name__)
 
 
-base_url = "https://arxiv.org/search/advanced"
-
-
-# def freeze(d):
-#     return d.__str__()
-
-
 def extractIdAndLinks(bs: BeautifulSoup):
     """ Extrait l'id, son link principal, et les exports disponibles dans une requete arXive
-
     :param bs: BeautifulSoup
 
     extrait les champs de
@@ -35,9 +49,7 @@ def extractIdAndLinks(bs: BeautifulSoup):
     arXiv:1006.3035 https://arxiv.org/abs/1006.3035
         {'pdf': 'https://arxiv.org/pdf/1006.3035', 'other': 'https://arxiv.org/format/1006.3035'}
 
-    :return: a tuple str,str, dict()
-
-    """
+    :return: a tuple str,str, dict()"""
     myLinks = {}
     tag_a = bs.find('a')
     myId = tag_a.contents[0]
@@ -61,7 +73,7 @@ def extractArXiveTags(bs: BeautifulSoup):
     <span class="tag is-small is-grey tooltip is-tooltip-top">cs.IR</span>
     </div>
     """
-    result = list()
+    result = []
     for tag in bs.find_all("span"):
         result.append(tag.getText())
     return result
@@ -76,69 +88,62 @@ def extractDate(stringData: str):
     ii = stringData.find("Submitted ")
     if ii == -1:
         return ""
-    else:
-        ii = ii + len("Submitted ")
-        iend = stringData.find(';', ii)
-        iend2 = stringData.find('\n', ii)
 
-        if iend2 < iend:
-            iend = iend2
-        return stringData[ii:iend]
+    ii = ii + len("Submitted ")
+    iend = stringData.find(';', ii)
+    iend2 = stringData.find('\n', ii)
 
-# Search parameters
-start = 0  # start at the first result
-total_results = 10000  # le max exploitable actuellement par le moteur de recherche
-results_per_iteration = 200  # # /!\ Ne fonctionne que si results_per_iteration != from arXive search UI
-wait_time = 3  # number of seconds to wait beetween calls
+    if iend2 < iend:
+        iend = iend2
 
-startDirectory: str = "./../"
-pdfRepository = "./Files/"  # directory must exist... TODO ?
-dataBase = 'myArXive.db'
+    return stringData[ii:iend]
 
 
-con = sqlite3.connect(startDirectory + dataBase)  #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
-cur = con.cursor()
+#: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
+con = sqlite3.connect(START_DIRECTORY + DATABASE)
+cur: Cursor = con.cursor()
 
-try:  # TODO PRA faire plus propre en vidage de la base ?
-    cur.execute('''PRAGMA foreign_keys = OFF''')
-    cur.execute('''DROP TABLE arXive''')
-    cur.execute('''PRAGMA foreign_keys = ON''')
-    records = cur.fetchall()
-    logger.debug(records)
-except:
-    pass
+# try:  # TODO PRA faire plus propre en vidage de la base ?
+#    cur.execute('PRAGMA foreign_keys = OFF')
+#    cur.execute('DROP TABLE arXive')
+#    cur.execute('PRAGMA foreign_keys = ON')
+#    records = cur.fetchall()
+#    logger.debug(records)
+# except:
+#    pass
 
+cur.execute('CREATE TABLE IF NOT EXISTS arXive ( \n'
+            '  entry_id  TEXT PRIMARY KEY,\n'
+            '  link  TEXT,\n'
+            '  dlLinks  TEXT,\n'
+            '  tags TEXT,\n'
+            '  title TEXT,\n'
+            '  authors  TEXT,\n'
+            '  summary TEXT,\n'
+            '  pdate  TEXT,\n'
+            '  extraData  TEXT)')
 
-cur.execute('''CREATE TABLE IF NOT EXISTS arXive ( 
-  entry_id  TEXT PRIMARY KEY,
-  link  TEXT,
-  dlLinks  TEXT,
-  tags TEXT,
-  title TEXT,
-  authors  TEXT,
-  summary TEXT,
-  pdate  TEXT,
-  extraData  TEXT)''')
+for year in range(END_YEAR, START_YEAR, -1):
 
-
-for year in range(2022, 1991, -1):  # 1991 permière année de publication arXive
-
-    datefrom = [ str(year)+"-01-1",str(year)+"-07-01"]  # la date de fin n'est pas prise, mais la date de début si ! bug 28 fev ?
-    dateto = [ str(year)+"-07-01",str(year+1)+"-1-1"   ]
+    # la date de fin n'est pas prise, mais la date de début si ! bug 28 fev ?
+    datefrom = [str(year) + "-01-1",
+                str(year) + "-07-01"]
+    dateto = [str(year) + "-07-01", str(year + 1) + "-1-1"]
     for index in range(len(dateto)):
-        search_query = "?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
+        values = (datefrom[index], dateto[index], RESULTS_PER_ITERATION)
+        search_query = f"?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
                        "&terms-0-field=all&classification-physics_archives=all" \
-                       "&classification-include_cross_list=include&date-year=&date-filter_by=date_range" \
-                       "&date-from_date={0}&date-to_date={1}&date-date_type=submitted_date" \
-                       "&abstracts=show&size={2}&order=-announced_date_first".format(datefrom[index], dateto[index],
-                                                                                     results_per_iteration)
+                       "&classification-include_cross_list=include&date-year=" \
+                       "&date-filter_by=date_range&date-from_date={values[0]}&date-to_date" \
+                       "={values[1]}&date-date_type=submitted_date&abstracts=show&" \
+                       "size={values[2]}&order=-announced_date_first"
 
-        logger.info(f'Searching arXiv for {base_url+search_query}')
+        logger.info('Searching arXiv for %s', BASE_URL + search_query)
 
-        last_request_dt = datetime.min # .now()
-        required = timedelta(seconds=wait_time)
-        for i in range(start, total_results, results_per_iteration):
-            logger.info("Results {} - {}".format(i + 1, i + results_per_iteration))
+        last_request_dt = datetime.min  # .now()
+        required = timedelta(seconds=WAIT_TIME)
+        for i in range(START, TOTAL_RESULTS, RESULTS_PER_ITERATION):
+            logger.info("Results %s - %s", i + 1, i + RESULTS_PER_ITERATION)
 
             since_last_request = datetime.now() - last_request_dt
             if since_last_request < required:
@@ -149,7 +154,7 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
             last_request_dt = datetime.now()
             data = []
             try:
-                with urlopen(base_url + search_query + "&start=" + str(i)) as url:
+                with urlopen(BASE_URL + search_query + "&start=" + str(i)) as url:
 
                     since_last_request = datetime.now() - last_request_dt
                     if since_last_request < required:
@@ -160,7 +165,6 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                     last_request_dt = datetime.now()
                     response = url.read()
 
-
                     soup = BeautifulSoup(response, "html.parser")
 
                     res = soup.find_all('li', {'class': 'arxiv-result'})
@@ -168,11 +172,10 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                     if len(res) == 0:
                         logger.info("No result for period")
 
-
                     for element in res:  # ,{'class' : 'arxiv-result'}):
-                        currentList = list()
+                        currentList = []
 
-                        currentSoup = BeautifulSoup(element.__str__(), "html.parser")
+                        currentSoup = BeautifulSoup(str(element), "html.parser")
                         element = currentSoup.find('p')
                         ide, idLink, Links = extractIdAndLinks(element)
                         currentList.append(ide)
@@ -187,17 +190,14 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                         currentList.append(str(extractArXiveTags(element)))
 
                         element = currentSoup.find_all('p', {'class': 'title'})
-                        # print("Title=", BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
 
-                        currentList.append(BeautifulSoup(element.__str__(), "html.parser").find('p').getText().strip())
+                        currentList.append(BeautifulSoup(str(element), "html.parser").find('p').getText().strip())
 
                         element = currentSoup.find_all('p', {'class': 'authors'})
-                        # print("authors=", BeautifulSoup(element.__str__(), "html.parser").find('a').getText().strip())
+
                         # print("authors=", element.__str__())
-                        authorsList = list()
-                        for a in BeautifulSoup(element.__str__(), "html.parser").find_all('a'):
-                            # print("authors2=",BeautifulSoup(a.__str__(), "html.parser").find('a').getText)
-                            # print("authors", a.getText())
+                        authorsList = []
+                        for a in BeautifulSoup(str(element), "html.parser").find_all('a'):
                             authorsList.append(a.getText())
 
                         currentList.append(str(authorsList))
@@ -206,7 +206,7 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
 
                         # print("Abstract-full=", element.contents[0])
 
-                        currentList.append(element.contents[0].strip())
+                        currentList.append(element.contents[0])  # .strip())
 
                         elem = currentSoup.findAll('p', {'class': 'is-size-7'})
 
@@ -225,27 +225,27 @@ for year in range(2022, 1991, -1):  # 1991 permière année de publication arXiv
                         data.append(currentList)
 
                         logger.debug(currentList)
-                        cur.execute('''insert into arXive ( entry_id,link,dlLinks,tags,title,authors,summary,pdate,extraData) values
+                        cur.execute('''insert into arXive \
+                        ( entry_id,link,dlLinks,tags,title,authors,summary,pdate,extraData) values
                      (?, ?, ?, ?, ?, ?, ?, ?, ?)''', currentList)
                         con.commit()
                         records = cur.fetchall()
-                        logger.debug("commit of current list: "+str(records))
+                        logger.debug("commit of current list: %s", str(records))
 
-                    if len(res) < results_per_iteration:
-                        break # no needs to continue "&start="  loop
+                    if len(res) < RESULTS_PER_ITERATION:
+                        break  # no needs to continue "&start="  loop
             finally:
                 pass
             # except urllib.error.URLError as e:
             #     logger.error(e.reason)
             # now = datetime.now()
             #
-            # required = timedelta(seconds=wait_time)
+            # required = timedelta(seconds=WAIT_TIME)
             # since_last_request = datetime.now() - last_request_dt
             # if since_last_request < required:
             #     to_sleep = (required - since_last_request).total_seconds()
             #     logger.info("Sleeping for %f seconds", to_sleep)
             #     time.sleep(to_sleep)
-
 
 cur.close()
 con.commit()  # committe les transactions.

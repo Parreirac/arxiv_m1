@@ -11,6 +11,7 @@ from sqlite3 import Cursor
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
+import settings
 
 BASE_URL = "https://arxiv.org/search/advanced"
 
@@ -25,10 +26,10 @@ RESULTS_PER_ITERATION = 200
 # number of seconds to wait beetween calls
 WAIT_TIME = 3
 
-START_DIRECTORY: str = "D:/mon_depot/"
+# START_DIRECTORY: str = "D:/mon_depot/"
 
-PDF_REPOSITORY = "D:/mon_depot/Files/"  # directory must exist... TODO ?
-DATABASE = 'myArXive.db'
+# PDF_REPOSITORY = "D:/mon_depot/Files/"  # directory must exist... TODO ?
+# DATABASE = 'myArXive.db'
 
 START_YEAR = 1991  # 1991 première année de publication arXiv
 END_YEAR = 2022
@@ -100,7 +101,7 @@ def extractDate(stringData: str):
 
 
 #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
-con = sqlite3.connect(START_DIRECTORY + DATABASE)
+con = sqlite3.connect(settings.STARTDIRECTORY + settings.DATABASE)
 cur: Cursor = con.cursor()
 
 # try:  # TODO PRA faire plus propre en vidage de la base ?
@@ -112,6 +113,7 @@ cur: Cursor = con.cursor()
 # except:
 #    pass
 
+# noinspection SqlNoDataSourceInspection
 cur.execute('CREATE TABLE IF NOT EXISTS arXive ( \n'
             '  entry_id  TEXT PRIMARY KEY,\n'
             '  link  TEXT,\n'

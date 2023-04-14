@@ -1,6 +1,5 @@
 Ce module est la déclinaison du projet fil rouge pour le cours langages en data-sciences
-Le code est sous https://github.com/Parreirac/arxiv_m1/tree/master/M.LDS.
-
+Le code est sous https://github.com/Parreirac/arxiv_m1/tree/master/M0.LDS.
 # Sujet/Goal 
 Write a Flask application that provides an API that reads an uploaded pdf,extract its metadata & text them available for consumption by the user.
 
@@ -93,7 +92,7 @@ La route « /doc » construit dynamiquement la liste des routes du serveur en
 # Qualité du code
 ## Gestion de version
 Le code a été produit avec PyCharm 2022.3.2 (Professional Edition), qui est disponible gratuitement pour les élèves de l’école.
-J'ai utilisé mon github, mais avec à cette heure, j'ai un problème de conflit j'update le dépot.
+J'ai utilisé mon github, mais avec à cette heure, j'ai un problème de conflit j'update le dépôt.
 (Outre le souhait de renommer le projet en module 0.)
 
 Cette difficulté m'a empêché d'utiliser les TAG (comme c'est le cas dans le module 1).

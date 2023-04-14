@@ -6,13 +6,13 @@ from typing import Optional
 from PyPDF2.errors import PdfReadError
 from PyPDF2.types import OutlineType
 
-import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat
-import logging
+# import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat
+# import logging
 # from MyStringSearch import My
 from MyPyPDF2 import MyExtractTxtFromPdfPage
 from PyPDF2.constants import DocumentInformationAttributes
 # from PyPDF2.generic import IndirectObject
-from PyPDF2 import PdfFileReader, DocumentInformation
+from PyPDF2 import DocumentInformation, PdfReader
 
 from MyStringSearch import Myfind
 import logging
@@ -116,7 +116,9 @@ def checkReferencesDict(data: dict):
 
 
 def addValue(dico: dict, key: str, src: Optional[DocumentInformation]):
-    dico[key] = src.getText(key)
+    # dico[key] = src.getText(key) # getText is deprecated and was removed in PyPDF2 3.0.0.
+    dico[key] = src.get(key)
+
 
 
 def getInfoFromOutlines(pdf, _text):
@@ -143,7 +145,7 @@ def complexRSearch(buff: str, sub: str):  # TODO mettre un start ?
 
 
 def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstract=None):
-    pdf = PdfFileReader(filename, strict=False)  # test file's existence by caller
+    pdf = PdfReader(filename, strict=False)  # test file's existence by caller
     logger.info("ExtractDataFrom for {}".format(filename))
     rv_keywords = ""
     rv_subtitle = ""  # in ordre to extrac affiliation
@@ -152,16 +154,16 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
 
     try:
 
-        if not pdf.documentInfo is None:
-            addValue(rv_fileMetadata, DocumentInformationAttributes.TITLE, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.AUTHOR, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.CREATOR, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.KEYWORDS, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.PRODUCER, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.CREATION_DATE, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.MOD_DATE, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.SUBJECT, pdf.documentInfo)
-            addValue(rv_fileMetadata, DocumentInformationAttributes.TRAPPED, pdf.documentInfo)
+        if not pdf.metadata is None:
+            addValue(rv_fileMetadata, DocumentInformationAttributes.TITLE, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.AUTHOR, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.CREATOR, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.KEYWORDS, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.PRODUCER, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.CREATION_DATE, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.MOD_DATE, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.SUBJECT, pdf.metadata)
+            addValue(rv_fileMetadata, DocumentInformationAttributes.TRAPPED, pdf.metadata)
 
         logger.debug("PDF metadata {}".format(repr(rv_fileMetadata)))
     except PdfReadError as e:
@@ -174,8 +176,8 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
     try:
 
         # tab = range(pdf.numPages)
-        for pageNumber in range(pdf.numPages):
-            page = pdf.getPage(pageNumber)
+        for pageNumber in range(len(pdf.pages)):
+            page = pdf.pages[pageNumber]
 
             # logger.debug("convert page {} ".format(pageNumber))
             curtext = MyExtractTxtFromPdfPage(page)  # .extract_text(orientations=0)
@@ -191,7 +193,7 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
         return rv_fileMetadata, rv_subtitle, rv_keywords, rv_reference_list
 
     except Exception as _e:
-        logger.error("Error in pdf  (2)")  # todo pra
+        logger.error("Error in pdf  %s " % repr(_e))  # todo pra mettre le texte de l'exection
     finally:
         pass
     # del page['/Resources']['/Font']
@@ -386,8 +388,8 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
     # -----------------------------------------
     # for debug purpose, extract REFERENCES from internal PDF goto REFERENCES (in annots)
     # unfortunately only available with LaTEX
-    for page in range(pdf.numPages):
-        pdfPage = pdf.getPage(page)
+    for page in range(len(pdf.pages)):
+        pdfPage = pdf.pages[page]
 
         if '/Annots' in pdfPage:
             for item in pdfPage['/Annots']:
@@ -414,57 +416,7 @@ def ExtractDataFrom(filename, arXiveTitle=None, _arXiveAuthors=None, arXiveAbstr
     return rv_fileMetadata, rv_subtitle, rv_keywords, rv_reference_list
 
 
-# "./Files/1001.4405.pdf"  => pas de rubrique nommée abstract ni keywords.
-# "./Files/1001.2279.pdf"  => entete et pied de page, en 2 colonnes
-# "./Files/1001.2813.pdf" # decoupage asymetrique : Part I. Algorithm au lieu de Abstract. Plusieurs fois references ! => rfind
-# "./Files/1001.1979.pdf" #  REFRENCES
-# "./Files/1001.2813.pdf"  # reference dans l'entete -> adaptation du filtre
-# "./Files/1001.4405.pdf" adaptation de l'entete
-# "./Files/1001.1615.pdf" plus un rapport ! découpage fantaisiste
-# file = "./Files/1001.1653.pdf" ajustement pied de page mais il reste des erreurs. [3] cite [4]
-# './Files/0908.3162.pdf' texte en deux colonnes, le début des references n'est pas pris.  <<<====================================
-# semble trop haut pour un pb de pied de page.
-
-# file = "1101.0309.pdf"  # "2209.14299.pdf"
-# file = "./Files/1001.2277.pdf"
-# file = "./Files/1001.4251.pdf"
-# file = "./Files/1001.1979.pdf" ???
-
-_file = "../Files/0905.0197.pdf"  # biblio en [2 a 3 lettres 2 chiffres ] encore de pb de n° de page :(
-# file = "./Files/1004.2624.pdf" # biblio de la forme [Benhamou and Sais 1992]
-# file = "./PDF32000_2008.pdf"
-# file = "test.pdf"
-# ./Files/1003.2586. reference de la forme Benhamou and Sais 1992
-# file = "./Files/1002.2034.pdf" # en Francais ! => Références
-# 0704.0304.pdf Bibliography et non references !
-# 0903.3669.pdf references presentes mais dans une rubrique sans nom
-# 0605119.pdf biblio de la forme [1]. xxx
-# file = "./Files/1001.1653.pdf" <====== la ref se cite elle meme
-# file = "./Files/1001.2279.pdf"
-
-
-# file = "../Files/0605123.pdf"  # portugais ! image de sein !
-#
-# file = "./.././Files/0605123.pdf"
-
-# ./.././Files/0605123.pdf   erreur TypeError('replace() argument 1 must be s
-file = "./.././Files/1008.1333.pdf"  # 1  bkal 2 hhuiu
-file = "./.././Files/1506.05282.pdf"
-# a tester arXiv:1506.01432   arXiv:1505.07872  arXiv:1505.07751 arXiv:1505.02729
-# ./.././Files/1504.04716.pdf # TODO mal découpé :s encore
-# ./.././Files/1502.05974.pdf
-# ./.././Files/1509.07897.pdf
-# ./.././Files/1507.05895.pdf
-
-file = "./.././Files/1302.4956.pdf"  # ==== > etrangement vide !  ./.././Files/1302.1561.pdf avec une figure dans les ref
-
-file = "./.././Files/1511.07373.pdf"  # preferences apparait apres les references :(
-file = "./.././Files/1509.03247.pdf"
-
-# TODO
-# arXiv:1506.00366
-# arXiv:1508.06235
-file = "./.././Files/1506.00366.pdf"
+file = "/home/christophe/mon_depot/Files/1506.00366.pdf"
 
 # ./.././Files/1509.07897.pdf # le mot references n'apparait pas :
 # ./.././Files/1507.05895.pdf # le mot references n'apparait pas :

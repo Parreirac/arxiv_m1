@@ -82,7 +82,13 @@ PyCharm fait tout, tout seul. (C'est gratuit pour les étudiants...)
 Ouvrez http://localhost:5000 dans un navigateur pour essayer le logiciel ou utilisez l'API via un 
 curl -F ‘data=@path/to/local/file’ UPLOAD_ADDRESSlocalhost:5000/upload
 
-
+## Utilisation avec docker 
+Créer l'image
+docker build . -t m0
+Lancer l'application :
+docker run -d --name mycontainer -p5000:5000 m0
+Vous pouvez maintenant accéder à l'application depuis un navigateur avec l'url http://127.0.0.1:5000/
+Une documentation de l'API est donnée en utilisant l'url http://127.0.0.1:5000/doc.
 # Api
 L’API permet une exploitation directe (POSTMAN ou curl), ou via une IHM accessible par un navigateur web. 
 La route « /doc » construit dynamiquement la liste des routes du serveur en 

@@ -3,7 +3,7 @@
 Ce repository (https://github.com/Parreirac/arxiv_m1.git) décrit les livrables du projet fil rouge (sauf le rapport).
 Les repertoires correspondent aux différents modules, sauf :
 * M0 qui décrit le programme réalisé dans le cadre de l'évaluation python
-* AWS qui décrit les éléments liés au module AWS, IAC, conteneurisation.
+* AWS qui décrit les éléments liés aux modules AWS-IAC, conteneurisation.
 
 Certains travaux ont été réalisés vie jupyter notebook.
 Sauf pour le module AWS, ils peuvent s'exécuter avec google colab.

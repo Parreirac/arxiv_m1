@@ -104,15 +104,6 @@ def extractDate(stringData: str):
 con = sqlite3.connect(settings.STARTDIRECTORY + settings.DATABASE)
 cur: Cursor = con.cursor()
 
-# try:  # TODO PRA faire plus propre en vidage de la base ?
-#    cur.execute('PRAGMA foreign_keys = OFF')
-#    cur.execute('DROP TABLE arXive')
-#    cur.execute('PRAGMA foreign_keys = ON')
-#    records = cur.fetchall()
-#    logger.debug(records)
-# except:
-#    pass
-
 # noinspection SqlNoDataSourceInspection
 cur.execute('CREATE TABLE IF NOT EXISTS arXive ( \n'
             '  entry_id  TEXT PRIMARY KEY,\n'
@@ -131,7 +122,7 @@ for year in range(END_YEAR, START_YEAR, -1):
     datefrom = [str(year) + "-01-1",
                 str(year) + "-07-01"]
     dateto = [str(year) + "-07-01", str(year + 1) + "-1-1"]
-    for index in range(len(dateto)):
+    for index in range(len(dateto)): # TODO PRA tres laid ! c'est fixe !
         values = (datefrom[index], dateto[index], RESULTS_PER_ITERATION)
         search_query = f"?advanced=&terms-0-operator=AND&terms-0-term=cs.AI" \
                        "&terms-0-field=all&classification-physics_archives=all" \

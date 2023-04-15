@@ -29,8 +29,10 @@ Le fichier settings définit quelques variables globales, dont les chemins d'acc
 
 # Modifications
 
-* enrichissement de ce readme
 * 15 avril 23 : 
+  * enrichissement de ce readme
+  * nombreuses modifications de nettoyage du code
+  * correction d'une erreur avec git qui avait écrasé des modifications de ExtractDataFromPDF.py
   * correction suite aux tests sous linux ;
   * ajout du fichier de données pour le notebook de NER
 

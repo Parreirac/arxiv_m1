@@ -9,8 +9,6 @@ Ajouter a la DBB des colonnes :
 
 Prendre une ligne de la DB et remplir les données manquantes
 """
-from langid.langid import LanguageIdentifier, model
-from ExtractDataFromPDF import ExtractDataFrom
 import logging
 import sqlite3
 import time
@@ -18,20 +16,17 @@ from datetime import datetime, timedelta
 from os.path import exists
 
 import requests
+from langid.langid import LanguageIdentifier, model
 
+from ExtractDataFromPDF import ExtractDataFrom
 import settings
 
-
-# from typing import Dict
-
-# STARTDIRECTORY: str = "" #"./../"
-# PDFREPOSITORY = "D:/mon_depot/Files/"  # directory must exist... TODO ?
-# dataBase = 'myArXive.db'
-DOWNLOADMISSINGFILE = False
 # To allow download of missing file
+DOWNLOADMISSINGFILE = False
+
 ALLOWRECOMPUTE = True  # set to True to recompute additional Data
 WAIT_TIME = 3
-# sql_request = '''SELECT * from arXive '''
+
 sql_request: str = '''SELECT * from arXive'''  # where pdate like '%2007' '''
 
 logger = logging.getLogger()
@@ -89,18 +84,7 @@ if not COLUMNALREADYADDED:
     cur.execute('''ALTER TABLE arXive ADD COLUMN ePDF_METADATA TEXT''')
     cur.execute('''ALTER TABLE arXive ADD COLUMN eLanguage TEXT''')
     # cur.execute('''ALTER TABLE arXive ADD COLUMN APPLICATION TEXT''')
-'''
-Pour supprimer faire dans le DB browser:
-ALTER table arXive drop SUBTITLE
-ALTER table arXive drop FirstCat
-ALTER table arXive drop KEYWORDS
-ALTER table arXive drop REFERENCES
-ALTER table arXive drop PDF_METADATA
-ALTER table arXive drop APPLICATION
-'''
 
-# cur.execute('''SELECT * from arXive''')
-# For debug purpose, filter database
 cur.execute(sql_request)
 
 records = cur.fetchall()

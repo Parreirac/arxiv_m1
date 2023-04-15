@@ -153,9 +153,6 @@ def clean_keyword(buff:str):
 
     return buff2
 
-# indonesie !   Keywords-IRC -> 1001.2665.pdf
-# Categories and Subject Descriptors  mais parfois on a ca ET KW
-
 
 def addspaces(texte:str):
     res = ""
@@ -328,7 +325,7 @@ def search_keywords(buffer_text,current_start):
     #        index_kw_end = min(index_kw_end,tmp_index-1)
 
     tmp_index = buffer_text.find('ACM ', index_kw)  # catégorie de doc ACM
-    if (tmp_index != -1):
+    if tmp_index != -1:
         index_kw_end = min(index_kw_end, tmp_index)
 
     if index_kw != -1:
@@ -581,7 +578,8 @@ def ExtractDataFrom(filename, arXivTitle=None, _arXivAuthors=None, arXivAbstract
     return rv_file_metadata, rv_subtitle, rv_keywords, rv_reference_list
 
 
-FILE = "/home/christophe/mon_depot/Files/1509.03247.pdf"
+#FILE = "/home/christophe/mon_depot/Files/1509.03247.pdf"
+FILE = "D:/mon_depot/Files/1509.03247.pdf"
 
 
 if __name__ == '__main__':

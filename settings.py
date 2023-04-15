@@ -1,13 +1,10 @@
-# import logging
-# from logging import config
-
 import logging.config
 
 # Must end with '/'
-#STARTDIRECTORY: str = "D:/mon_depot/" #"./../"
-STARTDIRECTORY: str = "/home/christophe/mon_depot/"
+STARTDIRECTORY: str = "D:/mon_depot/"
+#STARTDIRECTORY: str = "/home/christophe/mon_depot/"
 
-PDFREPOSITORY = "./Files/"  # directory must exist... TODO ?
+PDFREPOSITORY = "./Files/"
 DATABASE = 'myArXive.db'
 
 FORMATTER = logging.Formatter("%(asctime)s — %(filename)s — %(funcName)s — %(levelname)s — %(message)s")

@@ -5,8 +5,7 @@ import logging.config
 
 # Must end with '/'
 #STARTDIRECTORY: str = "D:/mon_depot/" #"./../"
-STARTDIRECTORY: str = "/home/christophe/mon_depot/Files/"
-
+STARTDIRECTORY: str = "/home/christophe/mon_depot/"
 
 PDFREPOSITORY = "./Files/"  # directory must exist... TODO ?
 DATABASE = 'myArXive.db'
@@ -14,8 +13,6 @@ DATABASE = 'myArXive.db'
 FORMATTER = logging.Formatter("%(asctime)s — %(filename)s — %(funcName)s — %(levelname)s — %(message)s")
 LOG_FILE = "my_app.log"
 
-#
-'[%(levelname)s:%(asctime)s] %(message)s'
 
 MY_LOGGING_CONFIG = {
     'version': 1,

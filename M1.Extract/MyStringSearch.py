@@ -1,8 +1,6 @@
 """
 Then the text extraction can have extra \n and spaces, this find handle them
 """
-# import settings  # TODO PRA si je le commente cela ne donne pas le meme resultat
-# import logging
 
 def Myfind(text: str, sub: str, caseSensitive=True, start:int=None, end:int=None, Reverse = False):  # TODO Reverse
     i = 0  # start index in text string

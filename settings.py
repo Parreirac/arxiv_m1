@@ -3,9 +3,9 @@
 
 import logging.config
 
-
+# Must end with '/'
 #STARTDIRECTORY: str = "D:/mon_depot/" #"./../"
-STARTDIRECTORY: str = "/home/christophe/mon_depot/Files"
+STARTDIRECTORY: str = "/home/christophe/mon_depot/Files/"
 
 
 PDFREPOSITORY = "./Files/"  # directory must exist... TODO ?

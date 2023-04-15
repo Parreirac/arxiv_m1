@@ -5,9 +5,9 @@ import json
 import logging
 import sqlite3
 
-import settings
-
 import jsonlines
+
+import settings
 
 filenameDocs: str = "dbDocs.json"
 filenameDocs2: str = "dbDocs2.json"
@@ -18,12 +18,9 @@ filenameTopics: str = "dbTopics.json"
 filenameFields: str = "dbFields.json"
 
 
-wait_time = 3
-# sql_request = '''SELECT * from arXive '''
-
 # LIMIT a 15 permet d'avoir une affiliation ou un topic
-sql_request: str = '''SELECT JSON, eLanguage, summary, tags,entry_id from arXive where eLanguage like 'en_%' and cFIRST_CAT like '%cs.AI%' ''' # LIMIT 2000''' # and cFIRST_CAT like 'cs.AI' ''' #  LIMIT 2000 '''  # LIMIT 20 offset 10''' #  where eLanguage = 'en_100' and cFIRST_CAT like 'cs.AI' '''  # where pdate like '%2001' '''
-
+sql_request: str = '''SELECT JSON, eLanguage, summary, tags,entry_id \
+        from arXive where eLanguage like 'en_%' and cFIRST_CAT like '%cs.AI%' ''' # LIMIT 2000'''
 logger = logging.getLogger()
 
 
@@ -32,7 +29,7 @@ def create_dict(string: str) -> dict[str, str] | None:
         return None
     tab = string[1: len(string) - 1].split("'")
 
-    return_value = dict()
+    return_value = {}
     for i in range(0, len(tab) - 1, 4):
         return_value[tab[i + 1]] = tab[i + 3]
 
@@ -43,7 +40,7 @@ def getS2Dict(obj):
     try:  # How to check whether this exists or not
         obj2 = obj.__dict__
         # Method exists and was used.
-        obj3 = dict()
+        obj3 = {}
 
         for cle, valeur in obj2.items():
             cle2 = cle
@@ -57,8 +54,9 @@ def getS2Dict(obj):
         return None
 
 
-def extractNumPages(txt: str):  # TODO pra chercher par le pdf ou les commentaires
-    pass
+def extractNumPages(_txt: str):
+    """Chercher par le pdf, ou par les commentaires le nombre de pages"""
+
 
 
 def create_list(string: str) -> list[str] | None:
@@ -66,14 +64,10 @@ def create_list(string: str) -> list[str] | None:
         return None
     tab = string[1: len(string) - 1].split("'")
 
-    return_value = list()
+    return_value = []
     for ii in range(1, len(tab), 2):
         return_value.append(tab[ii])
     return return_value
-
-
-'''a faire avant les traitements tant que l'on a bien des dictionnaires'''
-
 
 def clearPaper(cdata: dict):
     cdata.pop('url', None)
@@ -110,6 +104,7 @@ def clearPaper(cdata: dict):
 
 
 def clearAuthor(data: dict):
+    """Filtrage de certaines informations qui ne servent pas """
     aff = data.get('affiliations', None)
     if aff is None or len(aff) == 0:
         data.pop('affiliations', None)
@@ -127,41 +122,14 @@ def clearAuthor(data: dict):
 
 
 logger.info('Start !')
-con = sqlite3.connect(
-    settings.STARTDIRECTORY + settings.DATABASE)  #: crée une connection.  # TODO PRA  quitter proprement si pas de BDD ou si déjà bloquée
+con = sqlite3.connect(settings.STARTDIRECTORY + settings.DATABASE)
 cur = con.cursor()
 
-# cur.execute('''PRAGMA table_info(arXive)''')
-# records = cur.fetchall()
-# required = timedelta(seconds=wait_time)
 
-# ListColumn = [e[1] for e in records]
-
-# ColumnToAdd = ['mCOMMENTS', 'cFIRST_CAT', 'eSUBTITLE', 'eKEYWORDS', 'eREFERENCES', 'ePDF_METADATA', 'ePDF_METADATA',
-#               'eLanguage', 'eNumpages', 'JSON']
-
-# for elem in ColumnToAdd:
-#    if elem in ListColumn:
-#        continue
-#    command = '''ALTER TABLE arXive ADD COLUMN ''' + elem + ''' TEXT'''
-#    cur.execute(command)
-
-'''
-Pour supprimer faire dans le DB browser:
-ALTER table arXive drop SUBTITLE
-ALTER table arXive drop FirstCat
-ALTER table arXive drop KEYWORDS
-ALTER table arXive drop REFERENCES
-ALTER table arXive drop PDF_METADATA
-ALTER table arXive drop APPLICATION
-'''
-
-# cur.execute('''SELECT * from arXive''')
-# For debug purpose, filter database
 cur.execute(sql_request)
 
 records = cur.fetchall()
-logger.debug("{} records to handle".format(len(records)))
+logger.debug("%s records to handle",(len(records)))
 
 # last_request_dt = datetime.min  # .now()
 # identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
@@ -199,7 +167,7 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameDocs, 'w') as writer:
         tags = row[3]
         tags = create_list(tags)
         entry_id = row[4]
-        if JSON is not None and len(JSON) > 2:  # todo gerer le cas ou JSON = {}
+        if JSON is not None and len(JSON) > 2:
             data = json.loads(JSON)
 
             # update sets
@@ -235,7 +203,7 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameDocs, 'w') as writer:
 
 # Save Affiliations
 with jsonlines.open(settings.STARTDIRECTORY + filenameAffiliations, 'w') as writer:
-    logger.info("there are {} affiliations".format(len(affilationsSet)))
+    logger.info("there are %s affiliations",(len(affilationsSet)))
 
     for aff in affilationsSet:
         # print (aff)
@@ -261,13 +229,13 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameAffiliations, 'w') as writ
 
 # Save Topics
 with jsonlines.open(settings.STARTDIRECTORY + filenameTopics, 'w') as writer:
-    logger.info("there are {} topics".format(len(topicsDict)))
+    logger.info("there are %s topics",(len(topicsDict)))
 
     writer.write(topicsDict)
 
 # Save fields
 with jsonlines.open(settings.STARTDIRECTORY + filenameFields, 'w') as writer:
-    logger.info("there are {} Fields".format(len(fieldsOfStudySet)))
+    logger.info("there are %s Fields",(len(fieldsOfStudySet)))
 
     writer.write(list(fieldsOfStudySet))
 
@@ -297,17 +265,17 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameDocs, 'w') as writer:
         tags = row[3]
         tags = create_list(tags)
         entry_id = row[4]
-        if JSON is not None and len(JSON) > 2:  # todo gerer le cas ou JSON = {}
+        if JSON is not None and len(JSON) > 2:
             data = json.loads(JSON)
 
-            data = clearPaper(data)  # a faire avant les traitements tant que l'on a bien des dictionnaires
+            data = clearPaper(data)
             # add fieldsOfStudy from arXiv metadata
             data["fieldsOfStudy"] = tags
             # add fieldsOfStudy from arXiv metadata
             data["abstract"] = summary
             # add Language from arXiv metadata
             data["Language"] = eLanguage[:2]
-            data["LanguageProbability"] = int(eLanguage[3:])  # todo pra tester
+            data["LanguageProbability"] = int(eLanguage[3:])
 
             authors = data.get("authors", None)
             listAuthors = []
@@ -366,7 +334,7 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameDocs, 'w') as writer:
             # print(clearedPaper)
             writer.write(data)
 
-            logger.info("save {}/{} ".format(i, len(records)))
+            logger.info("save %s/%s ",i, len(records))
             # break
 cur.close()
 # con.commit()  # committe les transactions.
@@ -374,7 +342,7 @@ con.close()  # ferme la connection.
 
 # create first level authors
 with jsonlines.open(settings.STARTDIRECTORY + filenameAuthors, 'w') as writer:
-    logger.info("there are {} first level authors".format(len(firstLevelAuthorDict)))
+    logger.info("there are %s first level authors",(len(firstLevelAuthorDict)))
 
     for k, v in firstLevelAuthorDict.items():
         if v.get("aliases", None) is None:
@@ -385,7 +353,7 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameAuthors, 'w') as writer:
 #secondLevelPapersDict = {}
 
 with jsonlines.open(settings.STARTDIRECTORY + filenameDocs2, 'w') as writer:
-    logger.info("there are {} second level documents".format(len(secondLevelPapersDict)))
+    logger.info("there are %s second level documents",(len(secondLevelPapersDict)))
 
     for k, v in secondLevelPapersDict.items():
         # ~~~~
@@ -398,7 +366,7 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameDocs2, 'w') as writer:
             listAuthors.append(autId)
         v["authors"] = listAuthors
 
-        if v.get("arxivId", None) == None:
+        if v.get("arxivId", None) is None:
             v.pop("arxivId", None)
         # ~~~~
 
@@ -406,7 +374,7 @@ with jsonlines.open(settings.STARTDIRECTORY + filenameDocs2, 'w') as writer:
 
 # create second level authors
 with jsonlines.open(settings.STARTDIRECTORY + filenameAuthors2, 'w') as writer:
-    logger.info("there are {} second level authors".format(len(secondLevelAuthorDict)))
+    logger.info("there are %s second level authors",(len(secondLevelAuthorDict)))
 
     for k, v in secondLevelAuthorDict.items():
         writer.write(v)

@@ -17,10 +17,10 @@ Le fichier settings définit quelques variables globales, dont les chemins d'acc
 
 * M0 est le livrable pour l'évaluation python. Il est maintenant déployable via docker ;
 * M1 est le module de creation d'une base SQL contenant une description des articles intelligence artificielle d'arXiv. Il contient :
-  * un notebook qui décrit comment télécharger (en python) un article, comment en lire le texte. Tesseract est également utilisé. (Avec un emploi sous google colab il n'y a aucune installation à faire en local)
-  * advancedArXivSearch permet la création du BDD SQLite qui contient l'ensemble des informations (métadonnées arXiv). Ce code utilise l'url "https://arxiv.org/search/advanced" qui permet de spécifier une periode dans la recherche des articles. Cela permet de faire une requête qui a plus de 10 000 réponses. Le téléchargement de l'ensemble des informations (or PDF) se fait en 3 nuits ;
+  * un notebook qui décrit comment télécharger (en python) un article, comment en lire le texte. Tesseract est également utilisé. (Avec un emploi sous google colab il n'y a aucune installation à faire en local.)
+  * advancedArXivSearch permet la création du BDD SQLite qui contient l'ensemble des informations (métadonnées arXiv). Ce code utilise l'url "https://arxiv.org/search/advanced" qui permet de spécifier une période dans la recherche des articles. Cela permet de faire une requête qui a plus de 10 000 réponses. Le téléchargement de l'ensemble des informations (or PDF) se fait en 3 nuits ;
   * EnrichDB télécharge les PDF et les exploite pour enrichir la BDD locale ; 
-  * ExtracDataFromPDF pour extraire des informations (actuellement mots-clés, références, métadonnées du fichiers) du PDF ;
+  * ExtracDataFromPDF pour extraire des informations (actuellement mots-clés, références, métadonnées du fichier) du PDF ;
   * MyPyPDF2 et MyStringSearch sont des surcharges de PyPDF2 ;
   * EnrichDBFromS2 utilise l'api de semantic scholar pour extraire les informations des pdf. (Bibliographie et citation, affiliation et topics) ;
 * M2 explore par deux notebook deux tâches de NLP : la reconnaissance d'entités nommées (avec spaCy) et le topic modeling (avec GENSIM). Attention le topic modeling nécessite plusieurs heures de calcul ;

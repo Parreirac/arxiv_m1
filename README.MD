@@ -8,8 +8,13 @@ Les repertoires correspondent aux différents modules, sauf :
 Certains travaux ont été réalisés vie jupyter notebook.
 Sauf pour le module AWS, ils peuvent s'exécuter avec google colab.
 (il convient de placer ces fichiers dans son drive google, ainsi que les éventuels fichiers de données au même niveau. Aucune installation n'est nécessaire.)
-Sinon, ils peuvent être consultés via le github au lien https://github.com/Parreirac/arxiv_m1.
-Malheureusement, dans le cas du notebook de topic modeling, les résultats du SDK LDAvis (pour visualiser un modèle LDA) sont perdu. Le notebook doit être relancé, or il nécessite un temps de calcul de plus de 5h.
+Sinon, ils peuvent être consultés (statiquement) via le github.
+(Malheureusement, dans le cas du notebook de topic modeling, les résultats du SDK LDAvis (pour visualiser un modèle LDA) sont perdu. Le notebook doit être relancé, or il nécessite un temps de calcul de plus de 5h...)
+
+
+Actuellement seul le module 0 est déployable de façon automatique. Car le fonctionnement actuel du projet est sur l'exécution successive de différents scripts.
+Le traitement est très long (trois nuits pour le téléchargement des seules métadonnées arXiv, un temps encore plus long pour la récupération des PDF).
+La base de données (SQLite) produite fin décembre 2022 fait plus de 7.7 Go. (Réalisée en utilisant https://www.semanticscholar.org/ pour obtenir les données manquantes.)
 
 
 # Contenu 
@@ -27,15 +32,33 @@ Le fichier settings définit quelques variables globales, dont les chemins d'acc
 * M3 produit le fichier RDF d'ensemble des données sémantisées. C'est un notebook utilisant OWLREADY2
 * M4 est le module d'exploitation, soit via SPARQL (avec un notebook) soit via Neo4j. 
 
+# Installation
+
+L'installation est faite de la façon standard :
+
+python -m venv venv
+
+. venv/bin/activate
+
+pip install -r requirements.txt
+
+
+Notez que requirements.txt est produit pour permet l'utilisation de jupyter notebook.
+Une installation plus économe serait d'avoir un fichier requirements par module, ce qui n'est pas si simple.
+(Le module M0 a été produit séparément puis inséré.)
+
+
 # Modifications
 
 * 15 avril 23 : 
   * enrichissement de ce readme
   * nombreuses modifications de nettoyage du code
   * correction d'une erreur avec git qui avait écrasé des modifications de ExtractDataFromPDF.py
-  * correction suite aux tests sous linux ;
+  * correction suite aux tests sous linux
   * ajout du fichier de données pour le notebook de NER
-
+* 16 avril 24 :
+  * ajout de la rubrique installation (avec une correction du fichier initial qui était dans les sous-repertoires) 
+  * ajout d'un guide Neo4j (pdf) dans M4 pour l'import RDF avec quelques exemples de requêtes
 
 
 

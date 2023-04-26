@@ -67,7 +67,7 @@ ALLOWED_EXTENSIONS = {'tex', 'pdf'}.
 
 ## Manuelle
 python -m venv venv
-venv/bin/activate
+. venv/bin/activate
 pip install -r requirements.txt
 export FLASK_APP= main
 export FLASK_ENV=development

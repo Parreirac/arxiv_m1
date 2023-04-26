@@ -95,6 +95,9 @@ La route « /doc » construit dynamiquement la liste des routes du serveur en
  
 ![img_1.png](img_1.png)
 
+*Modification 25/04/23*
+Modification du code pour utiliser flasgger. Utilisez maintenant la route /apidocs.
+
 # Qualité du code
 ## Gestion de version
 Le code a été produit avec PyCharm 2022.3.2 (Professional Edition), qui est disponible gratuitement pour les élèves de l’école.
@@ -132,3 +135,10 @@ Outre les évolutions liées au projet fil rouge. On pourrait :
 * Comparer les perf de api de lecture d’un pdf
 * travailler sur l'axe CSS pour l'ihm, i18n. Difficulté sur javascript bootstrap. 
 * tester l'API avec POSTMAN
+
+# Evolution réalisée
+
+## 25/04/23
+Modification du code pour utiliser flasgger (https://github.com/flasgger/flasgger). 
+Utilisez maintenant la route /apidocs, plus complète.
+

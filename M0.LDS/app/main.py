@@ -1,4 +1,5 @@
 """Entry Point for the module_0 flask app"""
+import json
 import logging
 import os
 import shutil
@@ -14,15 +15,23 @@ from tiers.metier import get_true_arxive_id, get_article_from_semanticscholar, \
 from tiers.pdf import get_metadata, get_watermark, get_text
 from tiers.randomtext import get_random_string
 
+from flasgger import Swagger
+
+
+
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 app = Flask(__name__)
+swagger = Swagger(app) # ajout de swagger
 
 MyConfig = DevConfig
 
 app.config.from_object(MyConfig)
+
+
+
 
 
 @app.errorhandler(409)  #
@@ -94,13 +103,28 @@ def prettydoc(fonction):
 def get_arxive_id_for_file(name):
     """For 'recent' arXive file, extract watermark as JSON.
     It gives id (and version), categories, and date.
-    :param:
-    file name (in user session)
-    :returns:
-    json dictionary {"id": , "cat": , "date": }
-    :Error:
-    - 411 if there is no directory in session
+    ---
+    tags:
+      - Métier
+    parameters:
+      - name: filename
+        type: string
+        required: true
+        description: file to handle in user session
+    responses:
+        200:
+            description: return  watermark
+        411:
+            description: there is no directory in session
+    produces:
+      - application/json
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
     """
+
+
+
     if "directory" not in session:
         abort(411)
     name = name.replace(' ', '_')
@@ -121,12 +145,26 @@ def get_arxive_id_for_file(name):
 def get_semanticscholarfor_file(name):
     """For 'recent' arXive file, with watermark return paper's data as a dictionary
     WARNING Dictionary can be very big ! (eg with citation)
-    :param:
-    file name (in user session)
-    :returns:
-    paper's dictionary
-    :Error:
-    - 411 if there is no directory in session"""
+    ---
+    tags:
+      - Métier
+    parameters:
+      - name: filename
+        type: string
+        required: true
+        description: file to handle in user session
+    responses:
+        200:
+            description: return  paper's dictionary
+        411:
+            description: there is no directory in session
+    produces:
+      - application/json
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
 
     if "directory" not in session:
         abort(411)
@@ -145,7 +183,19 @@ def get_semanticscholarfor_file(name):
 @app.route('/getserverfilenames')
 def get_file_names():
     """As list of files may differ between server and client\
-    gives list of server files for current session"""
+    gives list of server files for current session
+    ---
+    responses:
+        200:
+            description: return session as json
+    tags:
+      - Débug
+    produces:
+      - application/json
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
 
     if "data" in session:
         return jsonify({session["data"]})
@@ -155,11 +205,26 @@ def get_file_names():
 
 @app.route('/getmetadata/<name>')
 def get_metadata_for_file(name):
-    """Return metadata of the file as JSON
-    :returns:
-    metadata as a json dictionary
-    :Error:
-    - 411 if there is no directory in session"""
+    """Return file metadata for file name in user session
+    ---
+    tags:
+      - Métier
+    parameters:
+      - name: filename
+        type: string
+        required: true
+        description: get metadata from file filename in user session
+    responses:
+        200:
+            description: return json
+        411:
+            description: there is no directory in session
+    produces:
+      - application/json
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
 
     if "directory" not in session:
         abort(411)
@@ -171,11 +236,27 @@ def get_metadata_for_file(name):
 
 @app.route('/gettext/<name>')
 def get_text_for_file(name):
-    """Return Text of the file as JSON
-    :returns:
-    metadata as a json dictionary
-    :Error:
-    - 411 if there is no directory in session"""
+    """Return Text of the file name as JSON
+    ---
+    tags:
+      - Métier
+    parameters:
+      - name: filename
+        type: string
+        required: true
+        description: get Text from file filename in user session
+    responses:
+        200:
+            description: return json
+        411:
+            description: there is no directory in session
+    produces:
+      - application/json
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
 
     if "directory" not in session:
         abort(411)
@@ -189,10 +270,26 @@ def get_text_for_file(name):
 @app.route('/startwfiles/<files>', methods=['POST', 'GET'])
 def start2_files(files):
     """Ends the file selection phase. The list of files is given as an argument.
-    :Example:
-    POST /startwfiles/0709.4655.pdf&1009.4586.pdf
-    :Error:
-    - 411 if there is no directory in session"""
+    Save file list in user session
+    Example : POST /startwfiles/0709.4655.pdf&1009.4586.pdf    
+    ---
+    tags:
+      - Général
+    parameters:
+      - name: filenames
+        type: string
+        required: true
+        description: file to download
+    responses:
+        200:
+            description: return empty json
+        411:
+            description: there is no directory in session
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
     logger.info("start2_files %s", files)
 
     tab_list_of_files = files.split("&")
@@ -236,11 +333,25 @@ def start2_files(files):
 @app.route('/')
 def home():
     """Start page for the app
-    - if session has no data return uploadFile.html \
+    If session has no data return uploadFile.html
     (source https://blog.miguelgrinberg.com/post/handling-file-uploads-with-flask)
-    - else return general start page for selected files (traitement.html)
-    :Error:
-    - 411 there is no directory in session"""
+    else return general start page for selected files (traitement.html)
+
+    ---
+    tags:
+      - Général
+    responses:
+        200:
+            description: render_template('uploadFile.html')
+        411:
+            description: there is no directory in session
+    produces:
+      - html
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
     logger.info("home(), methode %s", request.method)
     if "directory" in session:
         logger.info("known user")
@@ -260,9 +371,15 @@ def home():
 
 @app.route('/doc', methods=['POST', 'GET'])
 def get_doc():
-    """Dynamically list server routes.
-    :returns:
-    render_template('doc.html',...)"""
+    """First version of dynamic documentation (without flasgger).
+    /apidocs gives a better UI and more results
+    ---
+    tags:
+      - Général
+    produces:
+      - html
+    deprecated: true
+    """
 
     logger.info("getDoc")
     result = []
@@ -284,12 +401,30 @@ def get_doc():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    """ upload a file
-    :Error:
-    - 410  no file part or file name
-    - 411
-    - 412 file type not in ALLOWED_EXTENSIONS
-    - 413 file already exists"""
+    """Upload a file
+    ---
+    tags:
+        - Général
+
+    responses:
+        200:
+            description: return empty json
+        410:
+            description: no file part or file name
+        411:
+            description: empty filename
+        412:
+            description: file type not in allowed
+        413:
+            description: file already exists
+        416:
+            description: file too large
+    externalDocs:
+        description: Project repository
+        url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
+
     logger.info("into upload_files")
 
     if "data" in session:
@@ -320,7 +455,6 @@ def upload():
         abort(412)
 
     if "directory" not in session:
-
         user_directory = MyConfig.UPLOAD_FOLDER + get_random_string(6)
         if not os.path.exists(user_directory):
             os.makedirs(user_directory)
@@ -341,13 +475,29 @@ def upload():
     return jsonify({})
 
 
-@app.route('/remove/<file>', methods=['POST', 'GET'])
+@app.route('/remove/<file>', methods=['POST', 'GET'])  # TODO pour quoi POST et GET ?
 def remove(file):
-    """Remove a file from server.
-    :Error:
-    - 411 there is no directory in session
-    - 413 no directory in session
+    """Remove a file from server
+    ---
+    tags:
+      - Général
+    parameters:
+      - name: filename
+        type: string
+        required: true
+        description: file to remove
+    responses:
+        200:
+            description: return empty json
+        411:
+            description: there is no directory in session
+        414:
+            description: filename is not in user session
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
     """
+
     logger.info("remove %s, %s", file, request.method)
 
     if "directory" not in session:
@@ -395,9 +545,25 @@ def remove(file):
 
 @app.route('/download/<name>')
 def download_file(name):
-    """Download File name\nFor futur use (we do not modify files yet).
-    :returns:
-    file if in user session."""
+    """Download File name
+    Download File name in user session, for futur use (we do not modify files yet).
+    ---
+    tags:
+      - Général
+    parameters:
+      - name: filename
+        type: string
+        required: true
+        description: file to download
+    responses:
+        200:
+            description: return file in json
+
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
     logger.info("download_file for {%s}", name)
     user_dir = session["directory"]
     return send_from_directory(MyConfig.UPLOAD_FOLDER + user_dir, name, as_attachment=True)
@@ -406,7 +572,26 @@ def download_file(name):
 @app.route('/handle/<num>')
 def handle_file(num):
     """Main processing. (Nothing now)
-    :param : id of the file to handle (start at 1)"""
+    ---
+    tags:
+      - Général
+    parameters:
+      - name: num
+        type: string
+        required: true
+        description: id of the file to handle (start at 1)
+    responses:
+        200:
+            description: go to traitement.html
+        411:
+            description: no files on server side
+        415:
+            description: invalid index
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
+
     logger.info('handleFile for {%s}', num)
     if "directory" in session:
         logger.info("known user")
@@ -465,12 +650,20 @@ def handle_file(num):
     return '<h1>La session a été effacée. Vous devez recharger de nouveaux fichiers ...</h1>'
 
 
-@app.route('/delete_session')
+@app.route('/delete_session/')
 def delete_session():
-    """Destroy the user's session. For debug purpose.
-    :returns:
-    '<h1>Session deleted!</h1>'"""
-
+    """Destroy the user's session.
+    Destroy the user's session. For debug purpose.
+    ---
+    tags:
+      - Débug
+    responses:
+      200:
+        description: Returns html text Session deleted!
+    externalDocs:
+      description: Project repository
+      url: https://github.com/Parreirac/arxiv_m1.git
+    """
     session.pop('data', default=None)
     if "directory" in session:
         directory = session["directory"]
@@ -488,6 +681,7 @@ def my_init():
         shutil.rmtree(MyConfig.UPLOAD_FOLDER)
     if not os.path.exists(MyConfig.UPLOAD_FOLDER):
         os.makedirs(MyConfig.UPLOAD_FOLDER)
+
 
 
 if __name__ == '__main__':

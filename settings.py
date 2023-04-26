@@ -1,8 +1,8 @@
 import logging.config
 
 # Must end with '/'
-STARTDIRECTORY: str = "D:/mon_depot/"
-#STARTDIRECTORY: str = "/home/christophe/mon_depot/"
+#STARTDIRECTORY: str = "D:/mon_depot/"
+STARTDIRECTORY: str = "/home/christophe/mon_depot/"
 
 PDFREPOSITORY = "./Files/"
 DATABASE = 'myArXive.db'

@@ -267,7 +267,7 @@ def get_text_for_file(name):
     return jsonify(rvalue)
 
 
-@app.route('/startwfiles/<files>', methods=['POST', 'GET'])
+@app.route('/startwfiles/<files>', methods=['POST']) # , 'GET'])
 def start2_files(files):
     """Ends the file selection phase. The list of files is given as an argument.
     Save file list in user session
@@ -369,10 +369,9 @@ def home():
     return render_template('uploadFile.html')
 
 
-@app.route('/doc', methods=['POST', 'GET'])
+@app.route('/doc', methods=['GET'])
 def get_doc():
-    """First version of dynamic documentation (without flasgger).
-    /apidocs gives a better UI and more results
+    """First version of dynamic documentation (without flasgger). /apidocs gives a better UI and more results
     ---
     tags:
       - Général
@@ -438,7 +437,7 @@ def upload():
     except RequestEntityTooLarge:
         abort(416)
     else:
-        logger.warning("unk erro in request.files")
+        logger.warning("unk erro in request.files") # TODO cette erreur se produit encore
     uploaded_file = request.files['file']
 
     # logger.info("uploaded_file={}".format(uploaded_file))
@@ -475,9 +474,10 @@ def upload():
     return jsonify({})
 
 
-@app.route('/remove/<file>', methods=['POST', 'GET'])  # TODO pour quoi POST et GET ?
+@app.route('/remove/<file>', methods=['DELETE','POST'])  # TODO pour quoi POST et GET ?
 def remove(file):
-    """Remove a file from server
+    """Remove a file from server (methode DELETE for use with curl)
+
     ---
     tags:
       - Général
@@ -571,7 +571,7 @@ def download_file(name):
 
 @app.route('/handle/<num>')
 def handle_file(num):
-    """Main processing. (Nothing now)
+    """Main processing. (Nothing now done from client side)
     ---
     tags:
       - Général
@@ -650,10 +650,10 @@ def handle_file(num):
     return '<h1>La session a été effacée. Vous devez recharger de nouveaux fichiers ...</h1>'
 
 
-@app.route('/delete_session/')
+@app.route('/delete_session/', methods=['DELETE','POST'])
 def delete_session():
     """Destroy the user's session.
-    Destroy the user's session. For debug purpose.
+    Destroy the user's session. For debug purpose (methode DELETE for use with curl)
     ---
     tags:
       - Débug
